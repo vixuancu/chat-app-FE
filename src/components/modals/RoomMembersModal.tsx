@@ -1,5 +1,6 @@
 import { ModalBackdrop } from './ModalBackdrop';
-import type { Room, User } from '../../services/types';
+import type { Room, User } from '@/services/types';
+import { Avatar } from '@/components/ui/Avatar';
 
 interface RoomMembersModalProps {
     room: Room;
@@ -19,11 +20,7 @@ export const RoomMembersModal: React.FC<RoomMembersModalProps> = ({ room, users,
                     {roomMembers.length > 0 ? (
                         roomMembers.map(member => (
                             <li key={member.id} className="flex items-center space-x-3 p-2">
-                                <img
-                                    src={member.avatar}
-                                    alt={member.name}
-                                    className="w-10 h-10 rounded-full"
-                                />
+                                <Avatar name={member.name} size="md" />
                                 <div>
                                     <p className="font-medium text-gray-800">{member.name}</p>
                                     <p className="text-sm text-gray-500">{member.email}</p>

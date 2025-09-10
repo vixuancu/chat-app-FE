@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { ChatMessage, User } from '../../services/types';
+import type { ChatMessage, User } from '@/services/types';
+import { Avatar } from '@/components/ui/Avatar';
 
 interface MessageListProps {
     messages: ChatMessage[];
@@ -38,11 +39,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, users, curre
 
                 return (
                     <div key={index} className={`flex items-start gap-3 my-4 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                        <img
-                            src={sender.avatar}
-                            alt={sender.name}
-                            className="w-8 h-8 rounded-full"
-                        />
+                        <Avatar name={sender.name} size="sm" />
                         <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
                             <div className={`px-4 py-2 rounded-2xl ${isCurrentUser
                                     ? 'bg-indigo-600 text-white rounded-br-none'

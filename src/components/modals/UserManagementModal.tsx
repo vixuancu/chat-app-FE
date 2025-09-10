@@ -1,5 +1,6 @@
 import { ModalBackdrop } from './ModalBackdrop';
-import type { User } from '../../services/types';
+import type { User } from '@/services/types';
+import { Avatar } from '@/components/ui/Avatar';
 
 interface UserManagementModalProps {
     users: User[];
@@ -28,8 +29,8 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ users,
                                 <tr key={user.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <div className="shrink-0 h-10 w-10">
-                                                <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
+                                            <div className="shrink-0">
+                                                <Avatar name={user.name} size="md" />
                                             </div>
                                             <div className="ml-4">
                                                 <div className="text-sm font-medium text-gray-900">{user.name}</div>
