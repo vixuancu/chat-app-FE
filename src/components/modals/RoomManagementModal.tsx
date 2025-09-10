@@ -4,7 +4,7 @@ import type { Room } from '../../services/types';
 interface RoomManagementModalProps {
     rooms: Room[];
     onClose: () => void;
-    onShowMembers: () => void;
+    onShowMembers: (room: Room) => void;
 }
 
 export const RoomManagementModal: React.FC<RoomManagementModalProps> = ({
@@ -42,7 +42,7 @@ export const RoomManagementModal: React.FC<RoomManagementModalProps> = ({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
-                                            onClick={onShowMembers}
+                                            onClick={() => onShowMembers(room)}
                                             className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-xs font-semibold"
                                         >
                                             Xem Thành Viên

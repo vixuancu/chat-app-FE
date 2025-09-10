@@ -5,13 +5,14 @@ interface RoomMembersModalProps {
     room: Room;
     users: User[];
     onClose: () => void;
+    zIndex?: number;
 }
 
-export const RoomMembersModal: React.FC<RoomMembersModalProps> = ({ room, users, onClose }) => {
+export const RoomMembersModal: React.FC<RoomMembersModalProps> = ({ room, users, onClose, zIndex }) => {
     const roomMembers = users.filter(user => room.members.includes(user.id));
 
     return (
-        <ModalBackdrop onClose={onClose}>
+        <ModalBackdrop onClose={onClose} zIndex={zIndex}>
             <div className="bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl">
                 <h3 className="text-xl font-semibold mb-4 text-gray-800">Thành viên: {room.name}</h3>
                 <ul className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin">

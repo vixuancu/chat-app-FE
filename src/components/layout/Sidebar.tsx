@@ -28,6 +28,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [showRoomMembers, setShowRoomMembers] = useState(false);
     const [showUserManagement, setShowUserManagement] = useState(false);
     const [showRoomManagement, setShowRoomManagement] = useState(false);
+    const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+
+    const handleShowMembers = (room: Room) => {
+        setSelectedRoom(room);
+        setShowRoomMembers(true);
+    };
 
     return (
         <>
@@ -99,11 +105,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <CreateRoomModal onClose={() => setShowCreateRoom(false)} />
             )}
 
-            {showRoomMembers && currentRoom && (
+            {showRoomMembers && selectedRoom && (
                 <RoomMembersModal
-                    room={currentRoom}
+                    room={selectedRoom}
                     users={users}
                     onClose={() => setShowRoomMembers(false)}
+                    zIndex={60}
                 />
             )}
 
@@ -118,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <RoomManagementModal
                     rooms={rooms}
                     onClose={() => setShowRoomManagement(false)}
-                    onShowMembers={() => setShowRoomMembers(true)}
+                    onShowMembers={handleShowMembers}
                 />
             )}
         </>
