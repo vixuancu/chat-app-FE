@@ -62,4 +62,45 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Output directory
+    outDir: "dist",
+    // Generate source maps for production debugging
+    sourcemap: true,
+    // Minify options
+    minify: "esbuild", // faster than terser
+    // Target browsers
+    target: "esnext",
+    // Rollup options
+    rollupOptions: {
+      output: {
+        // Manual chunks for better caching
+        manualChunks: {
+          // Vendor chunk for stable dependencies
+          vendor: ["react", "react-dom"],
+          // Router chunk
+          router: ["react-router-dom"],
+        },
+        // Asset file naming
+        assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return `assets/[name]-[hash][extname]`;
+          
+          if (/\.(css)$/.test(assetInfo.name)) {
+            return `css/[name]-[hash][extname]`;
+          }
+          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+            return `images/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+        // JS chunk file naming
+        chunkFileNames: "js/[name]-[hash].js",
+        entryFileNames: "js/[name]-[hash].js",
+      },
+    },
+    // Chunk size warning limit (500kb)
+    chunkSizeWarningLimit: 500,
+    // CSS code splitting
+    cssCodeSplit: true,
+  },
 });
