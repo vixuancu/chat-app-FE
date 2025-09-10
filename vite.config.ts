@@ -9,6 +9,20 @@ export default defineConfig({
     react(),
     tailwindcss(), // <-- gọi plugin tailwind
   ],
+  optimizeDeps: {
+    // Force pre-bundle these dependencies
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+    ],
+    // Exclude from pre-bundling (usually for ESM-only packages)
+    exclude: [
+      // Add any problematic dependencies here
+    ],
+    // Force optimize on startup
+    force: false,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
