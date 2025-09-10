@@ -7,7 +7,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
     return (
-        <header className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
+        <header className="p-4 border-b border-gray-200 flex justify-between items-center shrink-0">
             <div className="flex items-center space-x-3">
                 <img
                     src={currentUser.avatar}

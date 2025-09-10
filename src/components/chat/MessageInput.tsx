@@ -34,7 +34,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage }) => 
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Nhập tin nhắn của bạn..."
-                    className="w-full pl-4 pr-16 py-3 text-sm bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full pl-4 pr-16 py-3 text-sm bg-gray-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2">
                     <button

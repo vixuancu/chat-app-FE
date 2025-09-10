@@ -23,7 +23,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return (
         <div className="flex-1 flex flex-col">
             {/* Chat Header */}
-            <header className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
+            <header className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0">
                 <div>
                     <h2 className="font-semibold text-lg">{room.name}</h2>
                     <p className="text-sm text-gray-500">{room.type} Room • {room.members.length} members</p>
