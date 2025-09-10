@@ -26,5 +26,26 @@ export default defineConfig({
     port: 3000,
     host: true,
     strictPort: true,
+    proxy: {
+      // Proxy API calls đến backend
+      "/api": {
+        target: "http://localhost:8080", // Backend server URL
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, ""), // Bỏ comment nếu backend không có prefix /api
+      },
+      // Proxy WebSocket cho chat real-time  
+      "/ws": {
+        target: "ws://localhost:8080",
+        ws: true,
+        changeOrigin: true,
+      },
+      // Proxy cho file uploads
+      "/uploads": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });
