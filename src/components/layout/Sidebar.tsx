@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Header } from './Header';
-import { RoomList } from '../chat/RoomList';
-import { CreateRoomModal } from '../modals/CreateRoomModal';
-import { RoomMembersModal } from '../modals/RoomMembersModal';
-import { UserManagementModal } from '../modals/UserManagementModal';
-import { RoomManagementModal } from '../modals/RoomManagementModal';
-import type { User, Room } from '../../services/types';
+import { RoomList } from '@/components/chat/RoomList';
+import { CreateRoomModal } from '@/components/modals/CreateRoomModal';
+import { RoomMembersModal } from '@/components/modals/RoomMembersModal';
+import { UserManagementModal } from '@/components/modals/UserManagementModal';
+import { RoomManagementModal } from '@/components/modals/RoomManagementModal';
+import type { User, Room } from '@/services/types';
 
 interface SidebarProps {
     currentUser: User;
