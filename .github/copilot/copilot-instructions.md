@@ -1,6 +1,6 @@
 # Hướng dẫn Code Frontend
 
-## 1. Nguyên tắc chung
+## Nguyên tắc chung
 
 - Code phải rõ ràng, dễ đọc, dễ bảo trì.
 - Tách biệt UI (component) và logic (hook, service).
@@ -8,28 +8,81 @@
 - Comment bằng tiếng Việt ở các đoạn quan trọng để giải thích cho
   team.
 
-## 2. Cấu trúc thư mục frontend chuẩn
+# 🏗️ Project Structure Guideline
 
-    src/
-    ├─ components/        # Các UI component tái sử dụng
-    │  ├─ common/         # Button, Modal, Input, ...
-    │  ├─ layout/         # Header, Sidebar, Footer
-    │
-    ├─ pages/             # Các trang chính (Home, Login, Chat, Admin,...)
-    │
-    ├─ hooks/             # Custom hooks (useAuth, useChat, useFetch,...)
-    │
-    ├─ services/          # API call, tách biệt logic gọi backend
-    │
-    ├─ contexts/          # React Context (AuthContext, ThemeContext,...)
-    │
-    ├─ utils/             # Hàm tiện ích, validate, format date, ...
-    │
-    ├─ types/             # Định nghĩa type, interface dùng chung
-    │
-    ├─ assets/            # Hình ảnh, icon, font, ...
-    │
-    └─ App.tsx            # Entry point chính
+Đây là cấu trúc thư mục chuẩn cho frontend project sử dụng **React**.  
+Mục tiêu: tách biệt **Client** (người dùng cuối) và **Admin** (quản trị hệ thống), đồng thời vẫn dùng chung được các phần tái sử dụng như UI component, hooks, utils.
+
+---
+
+## 1. Cấu trúc thư mục tổng thể
+
+src/
+├─ client/ # Ứng dụng dành cho người dùng (Client App)
+│ ├─ components/ # UI component riêng của client
+│ ├─ pages/ # Các trang chính (Home, Login, Profile, Chat, ...)
+│ ├─ hooks/ # Custom hooks dành riêng cho client
+│ ├─ services/ # API call cho client (auth, chat, product, ...)
+│ ├─ contexts/ # React Context (AuthContext, ThemeContext, ...)
+│ ├─ routes/ # Định nghĩa routing riêng cho client
+│ └─ AppClient.tsx # Entry point cho client
+│
+├─ admin/ # Ứng dụng dành cho quản trị (Admin App)
+│ ├─ components/ # UI component riêng của admin (Table, DashboardCard,...)
+│ ├─ pages/ # Các trang quản trị (UserManagement, ProductManagement, ...)
+│ ├─ hooks/ # Custom hooks dành riêng cho admin
+│ ├─ services/ # API call cho admin (user, order, report,...)
+│ ├─ contexts/ # Context riêng cho admin
+│ ├─ routes/ # Định nghĩa routing riêng cho admin
+│ └─ AppAdmin.tsx # Entry point cho admin
+│
+├─ shared/ # Phần tái sử dụng giữa client và admin
+│ ├─ components/ # Button, Modal, Input, Form, Layout cơ bản
+│ ├─ hooks/ # Custom hooks dùng chung (useFetch, useDebounce, ...)
+│ ├─ utils/ # Hàm tiện ích, validate, format date,...
+│ ├─ types/ # Định nghĩa type/interface chung
+│ └─ assets/ # Hình ảnh, icon, font
+│
+├─ index.tsx # Entry point chính (chọn load AppClient hoặc AppAdmin tùy route)
+└─ routes.tsx # Config route tổng hợp
+
+## 2. Routing định hướng
+
+### 2.1 Client routes
+
+- `/` → Trang chủ (Home)
+- `/login` → Đăng nhập
+- `/register` → Đăng ký
+- `/products` → Danh sách sản phẩm
+- `/profile` → Thông tin cá nhân
+- `/chat` → Chat
+
+### 2.2 Admin routes
+
+- `/admin` → Dashboard chính
+- `/admin/users` → Quản lý người dùng
+- `/admin/products` → Quản lý sản phẩm
+- `/admin/orders` → Quản lý đơn hàng
+
+> ⚠️ Lưu ý: Người dùng **không được phép** truy cập `/admin/*`.  
+> Admin có thể truy cập cả `/client/*` và `/admin/*`.
+
+---
+
+Nguyên tắc bảo mật routing
+
+- Sử dụng **ProtectedRoute** để chặn người dùng không có quyền vào admin.
+- Context/Auth service sẽ quản lý role (`user`, `admin`).
+- Khi `role = admin`, admin có thể load cả 2 app (client + admin).
+- Khi `role = user`, chỉ load client app.
+
+---
+
+Ưu điểm của cách chia này
+✅ Code rõ ràng, tách biệt trách nhiệm.  
+✅ Admin và Client có thể phát triển độc lập.  
+✅ Shared folder giúp tái sử dụng logic/UI.  
+✅ Dễ mở rộng: sau này có thể thêm **mobile/** hoặc **partner/** tương tự client/admin.
 
 ## 3. Coding Style
 
