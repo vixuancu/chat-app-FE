@@ -1,9 +1,11 @@
 # Reorganization Checklist
 
 ## Overview
+
 Frontend được tổ chức thành 3 phần: `client/`, `admin/`, `shared/`
 
 ## Current Status
+
 - ✅ **Step A**: Tạo folders và re-export wrappers
 - ✅ **Step B**: AppClient wrapper
 - ✅ **Step C**: Admin skeleton
@@ -14,11 +16,12 @@ Frontend được tổ chức thành 3 phần: `client/`, `admin/`, `shared/`
 ## Testing Checklist
 
 ### Manual Tests
+
 ```bash
 # Build test
 npm run build
 
-# Type check  
+# Type check
 npm run build -- --mode=production
 
 # Dev server
@@ -26,6 +29,7 @@ npm run dev
 ```
 
 ### Functionality Tests
+
 - [ ] Login/Register flow hoạt động
 - [ ] Chat functionality hoạt động
 - [ ] Logout redirect hoạt động
@@ -35,11 +39,13 @@ npm run dev
 ## Next Steps (TODO_REORG)
 
 ### Phase 2: Gradual Migration
+
 1. **Client App**: Từ từ migrate imports từ `src/` sang `@client/`
 2. **Admin Integration**: Tích hợp admin routes vào main app
 3. **Shared Optimization**: Move common utilities vào shared
 
 ### Phase 3: Clean Up
+
 1. Remove original files sau khi đã migrate hết
 2. Update all imports to use new aliases
 3. Clean up TODO_REORG comments
@@ -62,7 +68,7 @@ git reset --hard <commit-hash>
 src/
 ├── client/          # Client-facing app
 │   ├── components/  # Re-exports from ../components
-│   ├── pages/       # Re-exports from ../pages  
+│   ├── pages/       # Re-exports from ../pages
 │   ├── hooks/       # Re-exports from ../hooks
 │   └── AppClient.tsx
 ├── admin/           # Admin panel
@@ -76,6 +82,7 @@ src/
 ```
 
 ## Notes
+
 - Hiện tại chỉ là re-export wrappers, chưa di chuyển code thực tế
 - Original structure vẫn intact để đảm bảo app hoạt động bình thường
 - TSConfig aliases đã được setup cho `@client/*`, `@admin/*`, `@shared/*`
