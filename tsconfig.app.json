@@ -23,6 +23,15 @@
       "@/*": [
         "./src/*"
       ],
+      "@client/*": [
+        "./src/client/*"
+      ],
+      "@admin/*": [
+        "./src/admin/*"
+      ],
+      "@shared/*": [
+        "./src/shared/*"
+      ],
       "@/components/*": [
         "./src/components/*"
       ],
