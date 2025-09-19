@@ -7,6 +7,19 @@ interface RoomListProps {
 }
 
 export const RoomList: React.FC<RoomListProps> = ({ rooms, currentRoom, onSelectRoom }) => {
+     // ✅ Guard clause để tránh lỗi khi rooms undefined
+    if (!rooms || !Array.isArray(rooms)) {
+        return (
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin">
+                <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Phòng Chat
+                </h3>
+                <div className="flex items-center justify-center p-8">
+                    <p className="text-sm text-gray-500">Đang tải phòng chat...</p>
+                </div>
+            </nav>
+        );
+    }
     return (
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-thin">
             <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">

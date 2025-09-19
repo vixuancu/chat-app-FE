@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
-import { authApi } from '@/services/api';
-import { storage } from '@/utils/storage';
-import type { User, AuthResponse } from '@/services/types';
+import { useState, useCallback } from "react";
+import { authApi } from "@/services/api";
+import { storage } from "@/utils/storage";
+import type { User, AuthResponse } from "@/services/types";
 
 interface UseAuthReturn {
   user: User | null;
@@ -9,7 +9,11 @@ interface UseAuthReturn {
   isInitialized: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullname: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    fullname: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -24,59 +28,88 @@ export const useAuth = (): UseAuthReturn => {
     try {
       const response: AuthResponse = await authApi.login(email, password);
       const { user: userData, token } = response.data;
-      
+
       // Save to storage
       storage.setToken(token);
       storage.setUser(userData);
       setUser(userData);
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const register = useCallback(async (email: string, password: string, fullname: string) => {
-    setIsLoading(true);
-    try {
-      const response: AuthResponse = await authApi.register(email, password, fullname);
-      const { user: userData, token } = response.data;
-      
-      // Save to storage
-      storage.setToken(token);
-      storage.setUser(userData);
-      setUser(userData);
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const register = useCallback(
+    async (email: string, password: string, fullname: string) => {
+      setIsLoading(true);
+      try {
+        const response: AuthResponse = await authApi.register(
+          email,
+          password,
+          fullname
+        );
+        const { user: userData, token } = response.data;
+
+        // Save to storage
+        storage.setToken(token);
+        storage.setUser(userData);
+        setUser(userData);
+      } catch (error) {
+        console.error("Registration failed:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
+    console.log("🔄 [useAuth] Bắt đầu logout process...", {
+      currentUser: user?.user_email,
+      hasToken: !!storage.getToken(),
+      timestamp: new Date().toISOString(),
+    });
+
     setIsLoading(true);
     try {
+      console.log("📡 [useAuth] Gọi logout API...");
       await authApi.logout();
+      console.log("✅ [useAuth] Logout API call thành công");
     } catch (error) {
-      console.error('Logout API call failed:', error);
-      // Continue with local logout even if API fails
+      console.error("⚠️ [useAuth] Logout API call thất bại:", error);
+      console.log("🔄 [useAuth] Tiếp tục với local logout...");
     } finally {
       // Clear storage and state
+      console.log("🧹 [useAuth] Clearing storage và state...");
+
+      const tokenBefore = storage.getToken();
+      const userBefore = storage.getUser();
+
       storage.clearAuth();
       setUser(null);
-      setIsInitialized(true); // Đảm bảo isInitialized = true để tránh loading vô tận
+      setIsInitialized(true);
       setIsLoading(false);
+
+      console.log("✅ [useAuth] Logout hoàn tất", {
+        tokenCleared: tokenBefore ? "YES" : "NO",
+        userCleared: userBefore ? "YES" : "NO",
+        currentTokenExists: !!storage.getToken(),
+        currentUserExists: !!storage.getUser(),
+        stateReset: true,
+        timestamp: new Date().toISOString(),
+      });
     }
-  }, []);
+  }, [user]);
 
   const refreshUser = useCallback(async () => {
     if (!storage.getToken()) {
       setIsInitialized(true);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const userData = await authApi.getMe();
@@ -84,7 +117,7 @@ export const useAuth = (): UseAuthReturn => {
       setUser(userData);
       setIsInitialized(true);
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error("Failed to refresh user:", error);
       // Token might be expired, clear auth
       storage.clearAuth();
       setUser(null);
@@ -103,6 +136,6 @@ export const useAuth = (): UseAuthReturn => {
     login,
     register,
     logout,
-    refreshUser
+    refreshUser,
   };
 };
