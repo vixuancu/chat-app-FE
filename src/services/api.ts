@@ -46,23 +46,52 @@ apiClient.interceptors.response.use(
 );
 // dto map dữ liệu clean code sau
 type BackendUser = {
-  uuid: string;
-  email_address: string;
-  full_name: string;
-  role: "Admin" | "Member";
-  created_at: string; // hoặc Date nếu backend trả về Date
-  updated_at: string; // Optional nếu có thể null/undefined
+  uuid?: string;
+  id?: string; // fallback
+  email_address?: string;
+  email?: string; // fallback
+  full_name?: string;
+  name?: string; // fallback
+  fullname?: string; // fallback
+  role?: "Admin" | "Member";
+  user_role?: "Admin" | "Member"; // fallback
+  created_at?: string;
+  updated_at?: string;
 };
-// helper map backend dto sang User interface
-const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
-  return {
-    user_uuid: backendUser.uuid,
-    user_email: backendUser.email_address,
-    user_fullname: backendUser.full_name,
-    user_role: backendUser.role,
-    user_created_at: backendUser.created_at,
-    user_updated_at: backendUser.updated_at, // Optional for security
+
+// helper map backend dto sang User interface với fallbacks
+const mapBackendUserToFrontend = (
+  backendUser: BackendUser | null | undefined
+): User => {
+  if (!backendUser) {
+    console.warn("⚠️ mapBackendUserToFrontend: backendUser is null/undefined");
+    return {
+      user_uuid: "",
+      user_email: "",
+      user_fullname: "",
+      user_role: "Member",
+      user_created_at: new Date().toISOString(),
+      user_updated_at: new Date().toISOString(),
+    };
+  }
+
+  const mapped = {
+    user_uuid: backendUser.uuid || backendUser.id || "",
+    user_email: backendUser.email_address || backendUser.email || "",
+    user_fullname:
+      backendUser.full_name || backendUser.name || backendUser.fullname || "",
+    user_role: (backendUser.role || backendUser.user_role || "Member") as
+      | "Admin"
+      | "Member",
+    user_created_at: backendUser.created_at || new Date().toISOString(),
+    user_updated_at: backendUser.updated_at || new Date().toISOString(),
   };
+
+  console.log("🔄 mapBackendUserToFrontend:", {
+    input: backendUser,
+    output: mapped,
+  });
+  return mapped;
 };
 // Auth API
 export const authApi = {
@@ -95,7 +124,22 @@ export const authApi = {
       user_password: password,
       user_fullname: fullname,
     });
-    return response.data;
+
+    console.log("🔍 Register response:", response);
+
+    // Map backend DTO to frontend format tương tự login
+    const mappedUser = mapBackendUserToFrontend(
+      response.data.data?.user || response.data.user
+    );
+    console.log("🔍 Mapped register user:", mappedUser);
+
+    return {
+      message: response.data.message || "Registration successful",
+      data: {
+        user: mappedUser,
+        token: response.data.data?.token || response.data.token,
+      },
+    };
   },
 
   logout: async (): Promise<void> => {
@@ -121,7 +165,14 @@ export const authApi = {
 
   getMe: async (): Promise<User> => {
     const response = await apiClient.get("/auth/me");
-    return response.data.data;
+    console.log("🔍 GetMe response:", response);
+
+    const mappedUser = mapBackendUserToFrontend(
+      response.data.data || response.data
+    );
+    console.log("🔍 Mapped getMe user:", mappedUser);
+
+    return mappedUser;
   },
 };
 
@@ -180,7 +231,15 @@ export const roomsApi = {
 export const adminApi = {
   getAllUsers: async (): Promise<User[]> => {
     const response = await apiClient.get("/admin/users");
-    return response.data.data;
+    console.log("🔍 GetAllUsers response:", response);
+
+    // Map array of backend users to frontend format
+    const users = (response.data.data || response.data).map(
+      mapBackendUserToFrontend
+    );
+    console.log("🔍 Mapped users:", users);
+
+    return users;
   },
 
   deleteUser: async (user_uuid: string): Promise<void> => {
