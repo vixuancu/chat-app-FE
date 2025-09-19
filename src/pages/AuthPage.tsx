@@ -3,12 +3,14 @@ import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 import type { User } from '../services/types';
 
-interface AuthPageProps {
-    onLogin: (user: User) => void;
-}
-
-export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
+export const AuthPage: React.FC = () => {
     const [isLoginMode, setIsLoginMode] = useState(true);
+
+    // Empty handler since routing will handle navigation automatically
+    const handleLoginSuccess = (user: User) => {
+        console.log('Login successful:', user?.user_fullname);
+        // Navigation will be handled by LoginForm using useNavigate
+    };
 
     return (
         <div className="w-full max-w-md">
@@ -22,7 +24,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
 
                 {isLoginMode ? (
                     <LoginForm
-                        onLogin={onLogin}
+                        onLogin={handleLoginSuccess}
                         onSwitchToRegister={() => setIsLoginMode(false)}
                     />
                 ) : (

@@ -1,15 +1,17 @@
 interface AvatarProps {
-    name: string;
+    name?: string;
     size?: 'sm' | 'md' | 'lg';
     className?: string;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({ name, size = 'md', className = '' }) => {
+    // Xử lý trường hợp name undefined/null/empty
+    const safeName = name || 'User';
     // Tạo màu avatar dựa trên tên
     const getAvatarColor = (name: string) => {
         const colors = [
             'bg-indigo-500',
-            'bg-purple-500', 
+            'bg-purple-500',
             'bg-pink-500',
             'bg-red-500',
             'bg-orange-500',
@@ -35,18 +37,18 @@ export const Avatar: React.FC<AvatarProps> = ({ name, size = 'md', className = '
     // Size classes
     const sizeClasses = {
         sm: 'w-8 h-8 text-xs',
-        md: 'w-10 h-10 text-sm', 
+        md: 'w-10 h-10 text-sm',
         lg: 'w-12 h-12 text-base'
     };
 
     return (
         <div className={`
             ${sizeClasses[size]} 
-            ${getAvatarColor(name)} 
+            ${getAvatarColor(safeName)} 
             rounded-full flex items-center justify-center text-white font-semibold
             ${className}
         `}>
-            {getInitials(name)}
+            {getInitials(safeName)}
         </div>
     );
 };

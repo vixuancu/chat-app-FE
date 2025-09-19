@@ -10,20 +10,22 @@ interface RoomMembersModalProps {
 }
 
 export const RoomMembersModal: React.FC<RoomMembersModalProps> = ({ room, users, onClose, zIndex }) => {
-    const roomMembers = users.filter(user => room.members.includes(user.id));
+    const roomMembers = users.filter(user =>
+        room.members?.includes(user.user_uuid)
+    );
 
     return (
         <ModalBackdrop onClose={onClose} zIndex={zIndex}>
             <div className="bg-white w-full max-w-sm p-6 rounded-2xl shadow-xl">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">Thành viên: {room.name}</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">Thành viên: {room.room_name || 'Direct Chat'}</h3>
                 <ul className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-thin">
                     {roomMembers.length > 0 ? (
                         roomMembers.map(member => (
-                            <li key={member.id} className="flex items-center space-x-3 p-2">
-                                <Avatar name={member.name} size="md" />
+                            <li key={member.user_uuid} className="flex items-center space-x-3 p-2">
+                                <Avatar name={member?.user_fullname} size="md" />
                                 <div>
-                                    <p className="font-medium text-gray-800">{member.name}</p>
-                                    <p className="text-sm text-gray-500">{member.email}</p>
+                                    <p className="font-medium text-gray-800">{member?.user_fullname}</p>
+                                    <p className="text-sm text-gray-500">{member.user_email}</p>
                                 </div>
                             </li>
                         ))

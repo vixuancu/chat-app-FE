@@ -39,7 +39,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    strictPort: true,
+    strictPort: true, // Tạm comment để tự động tìm port khác
     proxy: {
       // Proxy API calls đến backend
       "/api": {

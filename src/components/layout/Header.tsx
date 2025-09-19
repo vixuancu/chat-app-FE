@@ -10,9 +10,9 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
     return (
         <header className="p-4 border-b border-gray-200 flex justify-between items-center shrink-0">
             <div className="flex items-center space-x-3">
-                <Avatar name={currentUser.name} size="md" />
+                <Avatar name={currentUser?.user_fullname} size="md" />
                 <div>
-                    <p className="font-semibold text-gray-800 text-sm">{currentUser.name}</p>
+                    <p className="font-semibold text-gray-800 text-sm">{currentUser?.user_fullname}</p>
                     <p className="text-xs text-green-500">● Online</p>
                 </div>
             </div>

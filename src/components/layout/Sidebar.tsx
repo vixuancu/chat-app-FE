@@ -68,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </button>
                     </div>
 
-                    {currentUser.role === 'Admin' && (
+                    {currentUser.user_role === 'Admin' && (
                         <div className="space-y-4">
                             <button
                                 onClick={() => setShowUserManagement(true)}

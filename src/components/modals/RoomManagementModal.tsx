@@ -33,12 +33,12 @@ export const RoomManagementModal: React.FC<RoomManagementModalProps> = ({
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {rooms.map(room => (
-                                <tr key={room.id}>
+                                <tr key={room.room_id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {room.name}
+                                        {room.room_name || 'Direct Chat'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {room.members.length}
+                                        {room.members?.length || 0}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button

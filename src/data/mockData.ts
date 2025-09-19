@@ -2,85 +2,141 @@ import type { User, Room, ChatMessage } from '../services/types';
 
 export const mockUsers: User[] = [
   { 
-    id: 1, 
-    name: 'Admin Demo', 
-    email: 'admin@demo.com', 
-    avatar: 'https://placehold.co/40x40/7c3aed/ffffff?text=A', 
-    role: 'Admin' 
+    user_uuid: "550e8400-e29b-41d4-a716-446655440001", 
+    user_email: 'admin@demo.com',  
+    user_fullname: 'Admin Demo',
+    user_role: 'Admin',
+    user_created_at: '2024-01-01T00:00:00Z',
+    user_updated_at: '2024-01-01T00:00:00Z',
+    user_password: 'admin123' // For login testing only
   },
   { 
-    id: 2, 
-    name: 'Alice', 
-    email: 'alice@demo.com', 
-    avatar: 'https://placehold.co/40x40/f87171/ffffff?text=A', 
-    role: 'Member' 
+    user_uuid: "550e8400-e29b-41d4-a716-446655440002", 
+    user_email: 'alice@demo.com',  
+    user_fullname: 'Alice Johnson',
+    user_role: 'Member',
+    user_created_at: '2024-01-02T00:00:00Z',
+    user_updated_at: '2024-01-02T00:00:00Z',
+    user_password: 'alice123' // For login testing only
   },
   { 
-    id: 3, 
-    name: 'Bob', 
-    email: 'bob@demo.com', 
-    avatar: 'https://placehold.co/40x40/60a5fa/ffffff?text=B', 
-    role: 'Member' 
+    user_uuid: "550e8400-e29b-41d4-a716-446655440003", 
+    user_email: 'bob@demo.com',  
+    user_fullname: 'Bob Smith',
+    user_role: 'Member',
+    user_created_at: '2024-01-03T00:00:00Z',
+    user_updated_at: '2024-01-03T00:00:00Z',
+    user_password: 'bob123' // For login testing only
   },
   { 
-    id: 4, 
-    name: 'Charlie', 
-    email: 'charlie@demo.com', 
-    avatar: 'https://placehold.co/40x40/34d399/ffffff?text=C', 
-    role: 'Member' 
+    user_uuid: "550e8400-e29b-41d4-a716-446655440004", 
+    user_email: 'charlie@demo.com',  
+    user_fullname: 'Charlie Brown',
+    user_role: 'Member',
+    user_created_at: '2024-01-04T00:00:00Z',
+    user_updated_at: '2024-01-04T00:00:00Z',
+    user_password: 'charlie123' // For login testing only
   },
   { 
-    id: 5, 
-    name: 'David', 
-    email: 'david@demo.com', 
-    avatar: 'https://placehold.co/40x40/facc15/ffffff?text=D', 
-    role: 'Member' 
+    user_uuid: "550e8400-e29b-41d4-a716-446655440005", 
+    user_email: 'david@demo.com',  
+    user_fullname: 'David Wilson',
+    user_role: 'Member',
+    user_created_at: '2024-01-05T00:00:00Z',
+    user_updated_at: '2024-01-05T00:00:00Z',
+    user_password: 'david123' // For login testing only
   },
 ];
 
 export const mockRooms: Room[] = [
   { 
-    id: 'public-101', 
-    name: 'Trò chuyện chung', 
-    lastMessage: 'David: Anyone here?', 
-    unread: 5, 
-    members: [1, 2, 3, 4, 5], 
-    type: 'Public' 
+    room_id: 101,
+    room_code: 'ABC123',
+    room_name: 'Trò chuyện chung',
+    room_is_direct_chat: false,
+    room_created_by: "550e8400-e29b-41d4-a716-446655440001",
+    room_created_at: '2024-01-01T00:00:00Z',
+    room_updated_at: '2024-01-01T00:00:00Z',
+    // lastMessage: 'David: Anyone here?', 
+    // unread: 5, 
+    members: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002", "550e8400-e29b-41d4-a716-446655440003", "550e8400-e29b-41d4-a716-446655440004", "550e8400-e29b-41d4-a716-446655440005"]
   },
   { 
-    id: 'private-201', 
-    name: 'Nói chuyện với Alice', 
-    lastMessage: 'You: I have submitted the report.', 
-    unread: 0, 
-    members: [1, 2], 
-    type: 'Private' 
+    room_id: 201,
+    room_code: 'DEF456',
+    room_name: "bé <3", // Direct chat không có tên
+    room_is_direct_chat: true,
+    room_created_by: "550e8400-e29b-41d4-a716-446655440001",
+    room_created_at: '2024-01-02T00:00:00Z',
+    room_updated_at: '2024-01-02T00:00:00Z',
+    // lastMessage: 'You: I have submitted the report.', 
+    // unread: 0, 
+    members: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002"]
   },
   { 
-    id: 'public-102', 
-    name: 'Dự án "Titan"', 
-    lastMessage: 'You: Let\'s have a meeting tomorrow.', 
-    unread: 0, 
-    members: [1, 2, 4, 5], 
-    type: 'Public' 
+    room_id: 102,
+    room_code: 'GHI789',
+    room_name: 'Dự án "Titan"',
+    room_is_direct_chat: false,
+    room_created_by: "550e8400-e29b-41d4-a716-446655440001",
+    room_created_at: '2024-01-03T00:00:00Z',
+    room_updated_at: '2024-01-03T00:00:00Z',
+    // lastMessage: 'You: Let\'s have a meeting tomorrow.', 
+    // unread: 0, 
+    members: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440002", "550e8400-e29b-41d4-a716-446655440004", "550e8400-e29b-41d4-a716-446655440005"]
   },
   { 
-    id: 'private-202', 
-    name: 'Nói chuyện với Bob', 
-    lastMessage: 'Bob: OK, I will check it.', 
-    unread: 2, 
-    members: [1, 3], 
-    type: 'Private' 
+    room_id: 202,
+    room_code: 'JKL012',
+    room_name: null, // Direct chat không có tên
+    room_is_direct_chat: true,
+    room_created_by: "550e8400-e29b-41d4-a716-446655440001",
+    room_created_at: '2024-01-04T00:00:00Z',
+    room_updated_at: '2024-01-04T00:00:00Z',
+    // lastMessage: 'Bob: OK, I will check it.', 
+    // unread: 2, 
+    members: ["550e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440003"]
   },
 ];
 
 export const mockMessages: Record<string, ChatMessage[]> = {
   'private-202': [
-    { userId: 3, text: 'Hi, can we discuss the new design?', time: '10:31 AM' },
-    { userId: 1, text: 'Sure, I am available now.', time: '10:32 AM' },
-    { userId: 3, text: 'OK, I will check it.', time: '10:35 AM' },
+    { 
+      message_id: 1,
+      room_id: 202,
+      user_uuid: "550e8400-e29b-41d4-a716-446655440003",
+      content: 'Hi, can we discuss the new design?',
+      message_created_at: '2024-01-01T10:31:00Z'
+    },
+    { 
+      message_id: 2,
+      room_id: 202,
+      user_uuid: "550e8400-e29b-41d4-a716-446655440001",
+      content: 'Sure, I am available now.',
+      message_created_at: '2024-01-01T10:32:00Z'
+    },
+    { 
+      message_id: 3,
+      room_id: 202,
+      user_uuid: "550e8400-e29b-41d4-a716-446655440003",
+      content: 'OK, I will check it.',
+      message_created_at: '2024-01-01T10:35:00Z'
+    },
   ],
   'public-101': [
-    { userId: 4, text: 'Hello everyone!', time: 'Yesterday' },
-    { userId: 5, text: 'Anyone here?', time: 'Yesterday' },
+    { 
+      message_id: 4,
+      room_id: 101,
+      user_uuid: "550e8400-e29b-41d4-a716-446655440004",
+      content: 'Hello everyone!',
+      message_created_at: '2024-01-01T09:00:00Z'
+    },
+    { 
+      message_id: 5,
+      room_id: 101,
+      user_uuid: "550e8400-e29b-41d4-a716-446655440005",
+      content: 'Anyone here?',
+      message_created_at: '2024-01-01T09:30:00Z'
+    },
   ]
 };

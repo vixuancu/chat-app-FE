@@ -32,23 +32,23 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, users, curre
     return (
         <div className="flex-1 p-6 overflow-y-auto scrollbar-thin bg-gray-50">
             {messages.map((message, index) => {
-                const sender = users.find(u => u.id === message.userId);
-                const isCurrentUser = sender?.id === currentUser.id;
+                const sender = users.find(u => u.user_uuid === message.user_uuid);
+                const isCurrentUser = sender?.user_uuid === currentUser.user_uuid;
 
                 if (!sender) return null;
 
                 return (
                     <div key={index} className={`flex items-start gap-3 my-4 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                        <Avatar name={sender.name} size="sm" />
+                        <Avatar name={sender?.user_fullname} size="sm" />
                         <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}>
                             <div className={`px-4 py-2 rounded-2xl ${isCurrentUser
-                                    ? 'bg-indigo-600 text-white rounded-br-none'
-                                    : 'bg-white text-gray-800 rounded-bl-none'
+                                ? 'bg-indigo-600 text-white rounded-br-none'
+                                : 'bg-white text-gray-800 rounded-bl-none'
                                 }`}>
-                                <p className="text-sm">{message.text}</p>
+                                <p className="text-sm">{message.content}</p>
                             </div>
                             <span className="text-xs text-gray-400 mt-1">
-                                {sender.name} • {message.time}
+                                {sender?.user_fullname} • {new Date(message.message_created_at).toLocaleTimeString()}
                             </span>
                         </div>
                     </div>

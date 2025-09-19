@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { mockUsers } from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import type { User } from '../../services/types';
 
 interface LoginFormProps {
@@ -8,18 +9,38 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onSwitchToRegister }) => {
-    const [email, setEmail] = useState('admin@demo.com');
-    const [password, setPassword] = useState('admin123');
+    const [email, setEmail] = useState('');//useState('admin@demo.com')
+    const [password, setPassword] = useState('');// useState('admin123')
     const [rememberMe, setRememberMe] = useState(false);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const { login, isLoading } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const user = mockUsers.find(u => u.email === email);
+        if (!email.trim() || !password.trim()) {
+            setError('Vui lòng nhập đầy đủ email và mật khẩu');
+            return;
+        }
 
-        if (user) {
-            onLogin(user);
-        } else {
-            alert('Tài khoản không hợp lệ. Sử dụng admin@demo.com hoặc các email demo khác.');
+        setError('');
+        setSuccessMessage('');
+        try {
+            await login(email.trim(), password);
+            setSuccessMessage('Đăng nhập thành công! Đang chuyển hướng...');
+
+            // Get the user data from storage after successful login
+            const userData = JSON.parse(localStorage.getItem('chat_app_user') || '{}');
+            onLogin(userData);
+
+            // Navigate to chat page
+            setTimeout(() => {
+                navigate('/chat');
+            }, 1000);
+        } catch (err: unknown) {
+            console.error('Login error:', err);
+            setError('Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
         }
     };
 
@@ -53,6 +74,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onSwitchToRegiste
                 />
             </div>
 
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                </div>
+            )}
+
+            {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
+                    {successMessage}
+                </div>
+            )}
+
             <div className="flex items-center justify-between">
                 <div className="flex items-center">
                     <input
@@ -76,9 +109,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onSwitchToRegiste
 
             <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={isLoading || successMessage !== ''}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                Đăng nhập
+                {isLoading ? 'Đang đăng nhập...' : successMessage ? 'Đăng nhập thành công!' : 'Đăng nhập'}
             </button>
 
             <p className="mt-6 text-center text-sm text-gray-500">

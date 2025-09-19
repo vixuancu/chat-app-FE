@@ -1,27 +1,25 @@
 
-import { useState } from 'react';
-import { AuthPage } from './pages/AuthPage';
-import { MainApp } from './components/MainApp';
-import type { User } from './services/types';
+import { useEffect } from 'react';
+import { AppRoutes } from './routes/AppRoutes';
+import { useAuth } from '@/hooks/useAuth';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { refreshUser, isInitialized } = useAuth();
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-  };
+  // Try to restore user session on app start
+  useEffect(() => {
+    // Chỉ gọi refreshUser nếu chưa được initialized và có token
+    if (!isInitialized && localStorage.getItem('chat_app_token')) {
+      refreshUser().catch(() => {
+        // Token might be expired, will be handled by the hook
+        console.log('Failed to refresh user session');
+      });
+    }
+  }, [refreshUser, isInitialized]);
 
   return (
     <div className="h-screen w-screen flex items-center justify-center">
-      {!currentUser ? (
-        <AuthPage onLogin={handleLogin} />
-      ) : (
-        <MainApp currentUser={currentUser} onLogout={handleLogout} />
-      )}
+      <AppRoutes />
     </div>
   );
 }

@@ -7,12 +7,18 @@ interface CreateRoomModalProps {
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose }) => {
     const [roomName, setRoomName] = useState('');
-    const [roomType, setRoomType] = useState('Công khai');
+    const [isDirectChat, setIsDirectChat] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement room creation
-        alert(`Tạo phòng: ${roomName} (${roomType})`);
+        // TODO: Implement room creation với backend API
+        const roomData = {
+            room_name: roomName,
+            room_is_direct_chat: isDirectChat,
+            room_code: Math.random().toString(36).substring(2, 8).toUpperCase() // Generate random 6-char code
+        };
+        alert(`Tạo phòng: ${roomName} (${isDirectChat ? 'Direct Chat' : 'Group Chat'})`);
+        console.log('Room data for backend:', roomData);
         onClose();
     };
 
@@ -41,12 +47,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose }) => 
                         </label>
                         <select
                             id="room-type"
-                            value={roomType}
-                            onChange={(e) => setRoomType(e.target.value)}
+                            value={isDirectChat ? 'direct' : 'group'}
+                            onChange={(e) => setIsDirectChat(e.target.value === 'direct')}
                             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                         >
-                            <option>Công khai</option>
-                            <option>Riêng tư</option>
+                            <option value="group">Group Chat (Nhóm)</option>
+                            <option value="direct">Direct Chat (1-1)</option>
                         </select>
                     </div>
 

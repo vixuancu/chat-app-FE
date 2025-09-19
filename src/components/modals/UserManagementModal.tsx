@@ -26,19 +26,19 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({ users,
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map(user => (
-                                <tr key={user.id}>
+                                <tr key={user.user_uuid}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="shrink-0">
-                                                <Avatar name={user.name} size="md" />
+                                                <Avatar name={user?.user_fullname} size="md" />
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                                <div className="text-sm font-medium text-gray-900">{user?.user_fullname}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {user.email}
+                                        {user.user_email}
                                     </td>
                                 </tr>
                             ))}

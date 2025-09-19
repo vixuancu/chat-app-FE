@@ -15,21 +15,21 @@ export const RoomList: React.FC<RoomListProps> = ({ rooms, currentRoom, onSelect
             <ul className="space-y-1">
                 {rooms.map(room => (
                     <li
-                        key={room.id}
-                        onClick={() => onSelectRoom(room.id)}
-                        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-indigo-50 ${currentRoom?.id === room.id ? 'bg-indigo-100' : ''
+                        key={room.room_id}
+                        onClick={() => onSelectRoom(room.room_id.toString())}
+                        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-indigo-50 ${currentRoom?.room_id === room.room_id ? 'bg-indigo-100' : ''
                             }`}
                     >
                         <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-indigo-600">
-                                {room.name.charAt(0)}
+                                {(room.room_name || 'Chat').charAt(0)}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-800 truncate">{room.name}</p>
+                                <p className="text-sm font-semibold text-gray-800 truncate">{room.room_name || 'Direct Chat'}</p>
                                 <p className="text-xs text-gray-500 truncate">{room.lastMessage}</p>
                             </div>
                         </div>
-                        {room.unread > 0 && (
+                        {room.unread && room.unread > 0 && (
                             <span className="bg-indigo-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
                                 {room.unread}
                             </span>
