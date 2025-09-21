@@ -1,8 +1,8 @@
 
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { AppRoutes } from './routes/AppRoutes';
-import { useAuth } from '@/hooks/useAuth';
+import { AppRoutes } from '@client/routes/AppRoutes';
+import { useAuth } from '@shared/hooks/useAuth';
 
 function App() {
   const { refreshUser, isInitialized } = useAuth();

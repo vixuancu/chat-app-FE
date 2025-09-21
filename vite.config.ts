@@ -11,11 +11,7 @@ export default defineConfig({
   ],
   optimizeDeps: {
     // Force pre-bundle these dependencies
-    include: [
-      "react",
-      "react-dom",
-      "react-router-dom",
-    ],
+    include: ["react", "react-dom", "react-router-dom"],
     // Exclude from pre-bundling (usually for ESM-only packages)
     exclude: [
       // Add any problematic dependencies here
@@ -27,15 +23,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@client": path.resolve(__dirname, "./src/client"),
-      "@admin": path.resolve(__dirname, "./src/admin"), 
+      "@admin": path.resolve(__dirname, "./src/admin"),
       "@shared": path.resolve(__dirname, "./src/shared"),
-      "@/components": path.resolve(__dirname, "./src/components"),
-      "@/pages": path.resolve(__dirname, "./src/pages"),
-      "@/services": path.resolve(__dirname, "./src/services"),
-      "@/data": path.resolve(__dirname, "./src/data"),
-      "@/utils": path.resolve(__dirname, "./src/utils"),
-      "@/hooks": path.resolve(__dirname, "./src/hooks"),
-      "@/routes": path.resolve(__dirname, "./src/routes"),
       "@/assets": path.resolve(__dirname, "./src/assets"),
     },
   },
@@ -51,7 +40,7 @@ export default defineConfig({
         secure: false,
         // rewrite: (path) => path.replace(/^\/api/, ""), // Bỏ comment nếu backend không có prefix /api
       },
-      // Proxy WebSocket cho chat real-time  
+      // Proxy WebSocket cho chat real-time
       "/ws": {
         target: "ws://localhost:8080",
         ws: true,
@@ -87,7 +76,7 @@ export default defineConfig({
         // Asset file naming
         assetFileNames: (assetInfo) => {
           if (!assetInfo.name) return `assets/[name]-[hash][extname]`;
-          
+
           if (/\.(css)$/.test(assetInfo.name)) {
             return `css/[name]-[hash][extname]`;
           }

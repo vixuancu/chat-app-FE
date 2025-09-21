@@ -1,7 +1,7 @@
 // TODO_REORG: Shared ProtectedRoute - re-export with potential enhancements
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@shared/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,7 +28,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Not authenticated
   if (!isAuthenticated || !user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Role-based access control (for future admin routes)
