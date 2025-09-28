@@ -1,5 +1,11 @@
 import axios from "axios";
-import type { User, Room, ChatMessage, AuthResponse } from "./types";
+import type {
+  User,
+  Room,
+  ChatMessage,
+  AuthResponse,
+  ApiResponse,
+} from "./types";
 import { storage } from "@shared/utils/storage";
 
 // API base configuration
@@ -27,20 +33,68 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
+// Response interceptor to handle auth errors and new API format
 apiClient.interceptors.response.use(
   (response) => {
     if (response && response.data) {
+      // New backend API returns { status, message, data } or { success, message, data }
+      // Check for both status="success" and success=true formats
+      const hasNewFormat =
+        (response.data.status !== undefined &&
+          response.data.data !== undefined) ||
+        (response.data.success !== undefined &&
+          response.data.data !== undefined);
+
+      if (hasNewFormat) {
+        console.log("📡 [API] New format response:", response.data);
+        // Normalize to success boolean format
+        const normalizedResponse = {
+          success:
+            response.data.status === "success" ||
+            response.data.success === true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+        console.log("📡 [API] Normalized response:", normalizedResponse);
+        return normalizedResponse;
+      }
+      // Legacy format - return data directly
       return response.data;
     }
     return response;
   },
   (error) => {
+    console.error("📡 [API] Error interceptor:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      method: error.config?.method,
+      data: error.response?.data,
+      message: error.message,
+    });
+
     if (error.response?.status === 401) {
       // Token expired or invalid, clear storage and redirect to login
       storage.clearAuth();
       window.location.href = "/";
     }
+
+    // If it's a server error with new API format in error response, handle it
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      if (errorData.status || errorData.success !== undefined) {
+        console.log("📡 [API] Server error with new format:", errorData);
+        // Convert server error to normalized format
+        const normalizedError = {
+          success: false,
+          message: errorData.message || error.message,
+          data: errorData.data || null,
+        };
+        console.log("📡 [API] Normalized error:", normalizedError);
+        return Promise.reject(new Error(normalizedError.message));
+      }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -96,22 +150,28 @@ const mapBackendUserToFrontend = (
 // Auth API
 export const authApi = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await apiClient.post("/auth/login", {
-      user_email: email,
-      user_password: password,
-    });
-    console.log("Login response:", response);
-    const mappedUser = mapBackendUserToFrontend(
-      response.data.data?.user || response.data.user
-    );
-    console.log("Mapped user:", mappedUser);
-    return {
-      message: response.data.message,
-      data: {
-        user: mappedUser,
-        token: response.data.data?.token || response.data.token,
-      },
-    };
+    const response: ApiResponse<{ token: string; user: BackendUser }> =
+      await apiClient.post("/auth/login", {
+        user_email: email,
+        user_password: password,
+      });
+    console.log("🔐 [authApi] Login response:", response);
+
+    // Handle new API format { success, message, data: { token, user } }
+    if (response.success) {
+      const mappedUser = mapBackendUserToFrontend(response.data.user);
+      console.log("✅ [authApi] Login successful, mapped user:", mappedUser);
+
+      return {
+        message: response.message,
+        data: {
+          user: mappedUser,
+          token: response.data.token,
+        },
+      };
+    } else {
+      throw new Error(response.message || "Login failed");
+    }
   },
 
   register: async (
@@ -182,99 +242,348 @@ export const roomsApi = {
     name: string,
     isDirectChat: boolean = false
   ): Promise<Room> => {
+    console.log("🚀 [roomsApi.createRoom] Sending request:", {
+      room_name: name,
+      is_direct_chat: isDirectChat,
+      url: `${API_BASE_URL}/rooms`,
+    });
+
     const response = await apiClient.post("/rooms", {
       room_name: name,
       is_direct_chat: isDirectChat,
     });
-    return response.data.data;
+
+    console.log("📦 [roomsApi.createRoom] Full response:", {
+      status: response.status,
+      data: response.data || response,
+      timestamp: new Date().toISOString(),
+    });
+
+    // API interceptor đã xử lý response.data, nên response chính là data
+    const room = response.data || response;
+    console.log("🏠 [roomsApi.createRoom] Extracted room:", room);
+
+    return room;
   },
 
   listRooms: async (): Promise<Room[]> => {
-    const response = await apiClient.get("/rooms");
-    return response.data.data;
+    console.log("📋 [roomsApi.listRooms] Starting request to /rooms...");
+
+    try {
+      const response: ApiResponse<Room[]> = await apiClient.get("/rooms");
+      console.log("📋 [roomsApi.listRooms] Raw response:", response);
+      console.log("📋 [roomsApi.listRooms] Response type:", typeof response);
+      console.log(
+        "📋 [roomsApi.listRooms] Response keys:",
+        Object.keys(response)
+      );
+
+      if (response.success) {
+        console.log(
+          "✅ [roomsApi.listRooms] Rooms with last_message:",
+          response.data
+        );
+        return response.data;
+      } else {
+        console.error("❌ [roomsApi.listRooms] Failed:", response.message);
+        throw new Error(response.message || "Failed to load rooms");
+      }
+    } catch (error) {
+      console.error("💥 [roomsApi.listRooms] Exception caught:", error);
+      throw error;
+    }
   },
 
   getRoom: async (roomID: number): Promise<Room> => {
-    const response = await apiClient.get(`/rooms/${roomID}`);
-    return response.data.data;
+    console.log(`📋 [roomsApi.getRoom] Getting room ${roomID}...`);
+
+    try {
+      const response: ApiResponse<Room> = await apiClient.get(
+        `/rooms/${roomID}`
+      );
+      console.log(
+        `📋 [roomsApi.getRoom] Response for room ${roomID}:`,
+        response
+      );
+
+      if (response.success) {
+        return response.data;
+      } else {
+        console.error(`❌ [roomsApi.getRoom] Failed:`, response.message);
+        throw new Error(response.message || "Failed to get room");
+      }
+    } catch (error) {
+      console.error(
+        `💥 [roomsApi.getRoom] Exception for room ${roomID}:`,
+        error
+      );
+      throw error;
+    }
   },
 
   getRoomMembers: async (roomID: number): Promise<User[]> => {
-    const response = await apiClient.get(`/rooms/${roomID}/members`);
-    return response.data.data;
+    console.log(
+      `👥 [roomsApi.getRoomMembers] Getting members for room ${roomID}...`
+    );
+
+    try {
+      const response: ApiResponse<User[]> = await apiClient.get(
+        `/rooms/${roomID}/members`
+      );
+      console.log(
+        `👥 [roomsApi.getRoomMembers] Response for room ${roomID}:`,
+        response
+      );
+
+      if (response.success) {
+        // Map backend users to frontend format if needed
+        const mappedUsers = response.data.map((user) =>
+          typeof user === "object" && user !== null
+            ? mapBackendUserToFrontend(user as BackendUser)
+            : (user as User)
+        );
+        return mappedUsers;
+      } else {
+        console.error(`❌ [roomsApi.getRoomMembers] Failed:`, response.message);
+        throw new Error(response.message || "Failed to get room members");
+      }
+    } catch (error) {
+      console.error(
+        `💥 [roomsApi.getRoomMembers] Exception for room ${roomID}:`,
+        error
+      );
+      throw error;
+    }
   },
 
   joinRoomByCode: async (code: string): Promise<Room> => {
-    const response = await apiClient.post("/rooms/join-by-code", {
-      room_code: code,
-    });
-    return response.data.data;
+    console.log(`🚪 [roomsApi.joinRoomByCode] Joining room with code: ${code}`);
+
+    try {
+      const response: ApiResponse<Room> = await apiClient.post(
+        "/rooms/join-by-code",
+        {
+          room_code: code,
+        }
+      );
+      console.log(`🚪 [roomsApi.joinRoomByCode] Response:`, response);
+
+      if (response.success) {
+        return response.data;
+      } else {
+        console.error(`❌ [roomsApi.joinRoomByCode] Failed:`, response.message);
+        throw new Error(response.message || "Failed to join room");
+      }
+    } catch (error) {
+      console.error(`💥 [roomsApi.joinRoomByCode] Exception:`, error);
+      throw error;
+    }
   },
 
-  getRoomMessages: async (roomID: number): Promise<ChatMessage[]> => {
-    const response = await apiClient.get(`/rooms/${roomID}/messages`);
-    return response.data.data;
+  getRoomMessages: async (
+    roomID: number,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ChatMessage[]> => {
+    const response: ApiResponse<ChatMessage[]> = await apiClient.get(
+      `/rooms/${roomID}/messages?limit=${limit}&offset=${offset}`
+    );
+    console.log(
+      `📜 [roomsApi.getRoomMessages] Room ${roomID} messages:`,
+      response
+    );
+
+    if (response.success) {
+      console.log(
+        "✅ [roomsApi.getRoomMessages] Messages with user info:",
+        response.data
+      );
+      return response.data;
+    } else {
+      console.error("❌ [roomsApi.getRoomMessages] Failed:", response.message);
+      throw new Error(response.message || "Failed to load messages");
+    }
   },
 
   sendMessage: async (
     roomID: number,
     content: string
   ): Promise<ChatMessage> => {
-    const response = await apiClient.post(`/rooms/${roomID}/messages`, {
-      content,
-    });
-    return response.data.data;
+    console.log(
+      `💬 [roomsApi.sendMessage] Sending message to room ${roomID}: ${content}`
+    );
+
+    try {
+      const response: ApiResponse<ChatMessage> = await apiClient.post(
+        `/rooms/${roomID}/messages`,
+        {
+          content,
+        }
+      );
+      console.log(`💬 [roomsApi.sendMessage] Response:`, response);
+
+      if (response.success) {
+        console.log(
+          `✅ [roomsApi.sendMessage] Message sent successfully:`,
+          response.data
+        );
+        return response.data;
+      } else {
+        console.error(`❌ [roomsApi.sendMessage] Failed:`, response.message);
+        throw new Error(response.message || "Failed to send message");
+      }
+    } catch (error) {
+      console.error(`💥 [roomsApi.sendMessage] Exception:`, error);
+      throw error;
+    }
   },
 };
 
 // Admin API
 export const adminApi = {
   getAllUsers: async (): Promise<User[]> => {
-    const response = await apiClient.get("/admin/users");
-    console.log("🔍 GetAllUsers response:", response);
+    console.log("🔍 [adminApi.getAllUsers] Getting all users...");
 
-    // Map array of backend users to frontend format
-    const users = (response.data.data || response.data).map(
-      mapBackendUserToFrontend
-    );
-    console.log("🔍 Mapped users:", users);
+    try {
+      const response: ApiResponse<BackendUser[]> = await apiClient.get(
+        "/admin/users"
+      );
+      console.log("🔍 [adminApi.getAllUsers] Response:", response);
 
-    return users;
+      if (response.success) {
+        const users = response.data.map(mapBackendUserToFrontend);
+        console.log("🔍 [adminApi.getAllUsers] Mapped users:", users);
+        return users;
+      } else {
+        console.error("❌ [adminApi.getAllUsers] Failed:", response.message);
+        throw new Error(response.message || "Failed to get users");
+      }
+    } catch (error) {
+      console.error("💥 [adminApi.getAllUsers] Exception:", error);
+      throw error;
+    }
   },
 
   updateUserRole: async (
     user_uuid: string,
     role: "Admin" | "Member"
   ): Promise<User> => {
-    const response = await apiClient.patch(`/admin/users/${user_uuid}/role`, {
-      role: role,
-    });
-
-    // Map backend response to frontend format
-    const mappedUser = mapBackendUserToFrontend(
-      response.data.data || response.data
+    console.log(
+      `🔍 [adminApi.updateUserRole] Updating role for ${user_uuid} to ${role}...`
     );
-    console.log("🔍 Updated user role:", mappedUser);
 
-    return mappedUser;
+    try {
+      const response: ApiResponse<BackendUser> = await apiClient.patch(
+        `/admin/users/${user_uuid}/role`,
+        {
+          role: role,
+        }
+      );
+      console.log("🔍 [adminApi.updateUserRole] Response:", response);
+
+      if (response.success) {
+        const mappedUser = mapBackendUserToFrontend(response.data);
+        console.log("🔍 [adminApi.updateUserRole] Updated user:", mappedUser);
+        return mappedUser;
+      } else {
+        console.error("❌ [adminApi.updateUserRole] Failed:", response.message);
+        throw new Error(response.message || "Failed to update user role");
+      }
+    } catch (error) {
+      console.error("💥 [adminApi.updateUserRole] Exception:", error);
+      throw error;
+    }
   },
 
   deleteUser: async (user_uuid: string): Promise<void> => {
-    await apiClient.delete(`/admin/users/${user_uuid}`);
+    console.log(`🗑️ [adminApi.deleteUser] Deleting user ${user_uuid}...`);
+
+    try {
+      const response: ApiResponse<null> = await apiClient.delete(
+        `/admin/users/${user_uuid}`
+      );
+      console.log("🗑️ [adminApi.deleteUser] Response:", response);
+
+      if (!response.success) {
+        console.error("❌ [adminApi.deleteUser] Failed:", response.message);
+        throw new Error(response.message || "Failed to delete user");
+      }
+    } catch (error) {
+      console.error("💥 [adminApi.deleteUser] Exception:", error);
+      throw error;
+    }
   },
 
   getAllRooms: async (): Promise<Room[]> => {
-    const response = await apiClient.get("/admin/rooms");
-    return response.data.data;
+    console.log("🏢 [adminApi.getAllRooms] Getting all rooms...");
+
+    try {
+      const response: ApiResponse<Room[]> = await apiClient.get("/admin/rooms");
+      console.log("📊 [adminApi.getAllRooms] Response:", response);
+
+      if (response.success) {
+        console.log("🏠 [adminApi.getAllRooms] Rooms data:", response.data);
+        return response.data;
+      } else {
+        console.error("❌ [adminApi.getAllRooms] Failed:", response.message);
+        throw new Error(response.message || "Failed to get rooms");
+      }
+    } catch (error) {
+      console.error("💥 [adminApi.getAllRooms] Exception:", error);
+      throw error;
+    }
   },
 
   getRoomDetails: async (room_id: number): Promise<Room> => {
-    const response = await apiClient.get(`/admin/rooms/${room_id}`);
-    return response.data.data;
+    console.log(`🏢 [adminApi.getRoomDetails] Getting room ${room_id}...`);
+
+    try {
+      const response: ApiResponse<Room> = await apiClient.get(
+        `/admin/rooms/${room_id}`
+      );
+      console.log(
+        `📊 [adminApi.getRoomDetails] Response for room ${room_id}:`,
+        response
+      );
+
+      if (response.success) {
+        return response.data;
+      } else {
+        console.error("❌ [adminApi.getRoomDetails] Failed:", response.message);
+        throw new Error(response.message || "Failed to get room details");
+      }
+    } catch (error) {
+      console.error(
+        `💥 [adminApi.getRoomDetails] Exception for room ${room_id}:`,
+        error
+      );
+      throw error;
+    }
   },
 
   deleteRoom: async (room_id: number): Promise<void> => {
-    await apiClient.delete(`/admin/rooms/${room_id}`);
+    console.log(`🗑️ [adminApi.deleteRoom] Deleting room ${room_id}...`);
+
+    try {
+      const response: ApiResponse<null> = await apiClient.delete(
+        `/admin/rooms/${room_id}`
+      );
+      console.log(
+        `🗑️ [adminApi.deleteRoom] Response for room ${room_id}:`,
+        response
+      );
+
+      if (!response.success) {
+        console.error("❌ [adminApi.deleteRoom] Failed:", response.message);
+        throw new Error(response.message || "Failed to delete room");
+      }
+    } catch (error) {
+      console.error(
+        `💥 [adminApi.deleteRoom] Exception for room ${room_id}:`,
+        error
+      );
+      throw error;
+    }
   },
 };
 

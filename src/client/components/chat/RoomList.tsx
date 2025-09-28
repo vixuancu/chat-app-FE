@@ -1,4 +1,6 @@
 import type { Room } from '@shared/services/types';
+import { ChatUtils } from '@shared/utils/chatUtils';
+import { storage } from '@shared/utils/storage';
 
 interface RoomListProps {
     rooms: Room[];
@@ -6,7 +8,45 @@ interface RoomListProps {
     onSelectRoom: (roomId: string) => void;
 }
 
-export const RoomList: React.FC<RoomListProps> = ({ rooms, currentRoom, onSelectRoom }) => {
+export const RoomList: React.FC<RoomListProps> = ({ 
+    rooms, 
+    currentRoom, 
+    onSelectRoom
+}) => {
+    // Get current user for message validation
+    const currentUser = storage.getUser();
+    
+    // Debug logging để check rooms data
+    console.log("🏠 [RoomList] Received rooms with backend last_message:", rooms);
+    console.log("👤 [RoomList] Current user:", currentUser?.user_uuid);
+    
+    // ✅ Helper function using ChatUtils for proper validation
+    const getLastMessage = (room: Room): string => {
+        if (!currentUser) return 'Chưa có tin nhắn nào';
+        
+        // Use ChatUtils to validate and format message
+        return ChatUtils.formatLastMessage(room, currentUser);
+    };
+    
+    // ✅ Helper function for time formatting
+    const getLastMessageTime = (room: Room): string => {
+        if (!ChatUtils.hasValidLastMessage(room)) {
+            return '';
+        }
+        
+        return ChatUtils.formatTime(room.last_message!.created_at);
+    };
+    
+    rooms?.forEach(room => {
+        console.log(`📊 [RoomList] Room ${room.room_name}:`, {
+            room_id: room.room_id,
+            member_count: room.member_count,
+            last_message: room.last_message,
+            displayMessage: getLastMessage(room),
+            displayTime: getLastMessageTime(room),
+        });
+    });
+
      // ✅ Guard clause để tránh lỗi khi rooms undefined
     if (!rooms || !Array.isArray(rooms)) {
         return (
@@ -38,8 +78,24 @@ export const RoomList: React.FC<RoomListProps> = ({ rooms, currentRoom, onSelect
                                 {(room.room_name || 'Chat').charAt(0)}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-800 truncate">{room.room_name || 'Direct Chat'}</p>
-                                <p className="text-xs text-gray-500 truncate">{room.lastMessage}</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-semibold text-gray-800 truncate">{room.room_name || 'Direct Chat'}</p>
+                                    <span className="text-xs text-gray-400">{getLastMessageTime(room)}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <p className={`text-xs truncate ${
+                                        ChatUtils.hasValidLastMessage(room) 
+                                            ? 'text-gray-500' 
+                                            : 'text-gray-400 italic'
+                                    }`}>
+                                        {getLastMessage(room)}
+                                    </p>
+                                    {room.member_count !== undefined && (
+                                        <span className="text-xs text-gray-400 ml-2">
+                                            {room.member_count} thành viên
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         {room.unread && room.unread > 0 && (

@@ -1,25 +1,41 @@
 import { useState } from 'react';
 import { ModalBackdrop } from './ModalBackdrop';
+import { roomsApi } from '@shared/services/api';
+import toast from 'react-hot-toast';
 
 interface CreateRoomModalProps {
     onClose: () => void;
+    onRoomCreated?: () => void; // Callback to refresh room list
 }
 
-export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose }) => {
+export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onRoomCreated }) => {
     const [roomName, setRoomName] = useState('');
     const [isDirectChat, setIsDirectChat] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement room creation với backend API
-        const roomData = {
-            room_name: roomName,
-            room_is_direct_chat: isDirectChat,
-            room_code: Math.random().toString(36).substring(2, 8).toUpperCase() // Generate random 6-char code
-        };
-        alert(`Tạo phòng: ${roomName} (${isDirectChat ? 'Direct Chat' : 'Group Chat'})`);
-        console.log('Room data for backend:', roomData);
-        onClose();
+        
+        if (!roomName.trim()) {
+            toast.error('Vui lòng nhập tên phòng');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const newRoom = await roomsApi.createRoom(roomName.trim(), isDirectChat);
+            toast.success(`Tạo phòng "${newRoom.room_name}" thành công!`);
+            
+            // Notify parent to refresh room list
+            onRoomCreated?.();
+            
+            onClose();
+        } catch (error) {
+            console.error('Error creating room:', error);
+            toast.error('Không thể tạo phòng. Vui lòng thử lại.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -66,9 +82,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose }) => 
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Tạo
+                            {isLoading ? 'Đang tạo...' : 'Tạo'}
                         </button>
                     </div>
                 </form>
