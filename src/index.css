@@ -4,19 +4,36 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Prevent body scroll, let components handle their own scroll */
 }
 
+/* Custom scrollbar for chat messages - like Messenger */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Hide scrollbar when not hovering */
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Messenger-like smooth scroll behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {

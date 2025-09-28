@@ -41,7 +41,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     };
 
     return (
-        <footer className="p-4 bg-white border-t border-gray-200">
+        <div className="p-4 bg-white">
             <form onSubmit={handleSubmit} className="relative">
                 <div className="relative">
                     <input
@@ -56,11 +56,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                                 ? "Đang kết nối..." 
                                 : isSending 
                                 ? "Đang gửi..." 
-                                : "Nhập tin nhắn của bạn..."
+                                : "Aa"
                         }
-                        className={`w-full pl-4 pr-16 py-3 text-sm bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            message.length > MAX_MESSAGE_LENGTH - 100 ? 'border-orange-300' : ''
-                        } ${message.length >= MAX_MESSAGE_LENGTH ? 'border-red-300' : ''}`}
+                        className={`w-full pl-4 pr-20 py-3 text-sm bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white disabled:opacity-50 disabled:cursor-not-allowed border-0 resize-none ${
+                            message.length > MAX_MESSAGE_LENGTH - 100 ? 'ring-2 ring-orange-300' : ''
+                        } ${message.length >= MAX_MESSAGE_LENGTH ? 'ring-2 ring-red-300' : ''} transition-all duration-200`}
                     />
                     
                     {/* Character counter */}
@@ -71,25 +71,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                             {remainingChars} ký tự còn lại
                         </div>
                     )}
-                </div>
-                
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <button
-                        type="submit"
-                        disabled={!message.trim() || disabled || isSending || message.length > MAX_MESSAGE_LENGTH}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        {isSending ? (
-                            <div className="flex items-center space-x-1">
-                                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>Gửi</span>
-                            </div>
-                        ) : (
-                            'Gửi'
-                        )}
-                    </button>
+                    
+                    {/* Send button */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                        <button
+                            type="submit"
+                            disabled={!message.trim() || disabled || isSending || message.length > MAX_MESSAGE_LENGTH}
+                            className="w-8 h-8 flex items-center justify-center text-white bg-blue-500 rounded-full hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 disabled:hover:bg-blue-500"
+                        >
+                            {isSending ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </form>
-        </footer>
+        </div>
     );
 };

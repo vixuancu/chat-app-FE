@@ -21,9 +21,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const [showMembers, setShowMembers] = useState(false);
 
     return (
-        <div className="flex-1 flex flex-col">
-            {/* Chat Header */}
-            <header className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex-1 flex flex-col h-full">
+            {/* Chat Header - Fixed at top */}
+            <header className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0 z-10">
                 <div>
                     <h2 className="font-semibold text-lg">{room.room_name || 'Direct Chat'}</h2>
                     <div className="flex items-center space-x-2">
@@ -54,17 +54,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 </button>
             </header>
 
-            {/* Message List */}
-            <MessageList
-                messages={messages}
-                currentUser={currentUser}
-            />
+            {/* Message List - Scrollable area that takes remaining space */}
+            <div className="flex-1 overflow-hidden">
+                <MessageList
+                    messages={messages}
+                    currentUser={currentUser}
+                />
+            </div>
 
-            {/* Message Input */}
-            <MessageInput 
-                onSendMessage={onSendMessage} 
-                disabled={!isConnected}
-            />
+            {/* Message Input - Fixed at bottom */}
+            <div className="flex-shrink-0 border-t border-gray-200">
+                <MessageInput 
+                    onSendMessage={onSendMessage} 
+                    disabled={!isConnected}
+                />
+            </div>
         </div>
     );
 };
