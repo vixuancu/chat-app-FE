@@ -48,6 +48,14 @@ export interface ChatMessage {
   content: string;
   created_at: string; // Changed from message_created_at to match backend
   is_own: boolean; // Added to indicate if message belongs to current user
+  status?: "sending" | "sent" | "error"; // Optimistic UI status
+}
+
+// 🆕 Pagination response for messages
+export interface MessagesResponse {
+  messages: ChatMessage[];
+  has_more: boolean;
+  next_cursor: number | null;
 }
 
 export interface AuthResponse {

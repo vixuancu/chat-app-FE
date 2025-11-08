@@ -1,16 +1,24 @@
 import { useState } from 'react';
+import { useTypingIndicator } from '@shared/hooks/useTypingIndicator';
 
 interface MessageInputProps {
     onSendMessage: (text: string) => Promise<void>;
     disabled?: boolean; // Disable input when WebSocket disconnected
+    roomId: number; // Phase 2.2: Room ID for typing indicator
+    socket: WebSocket | null; // Phase 2.2: WebSocket for typing indicator
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({ 
     onSendMessage, 
-    disabled = false 
+    disabled = false,
+    roomId,
+    socket
 }) => {
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+
+    // Phase 2.2: Typing indicator
+    const { typingUsers, notifyTyping } = useTypingIndicator({ roomId, socket });
 
     const MAX_MESSAGE_LENGTH = 2000; // Match backend validation
     const remainingChars = MAX_MESSAGE_LENGTH - message.length;
@@ -42,12 +50,30 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
     return (
         <div className="p-4 bg-white">
+            {/* Phase 2.2: Typing indicator display */}
+            {typingUsers.length > 0 && (
+                <div className="text-sm text-gray-500 px-4 pb-2 italic">
+                    {typingUsers.length === 1 
+                        ? `${typingUsers[0]} đang nhập...`
+                        : typingUsers.length === 2
+                        ? `${typingUsers[0]} và ${typingUsers[1]} đang nhập...`
+                        : `${typingUsers[0]}, ${typingUsers[1]} và ${typingUsers.length - 2} người khác đang nhập...`
+                    }
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="relative">
                 <div className="relative">
                     <input
                         type="text"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={(e) => {
+                            setMessage(e.target.value);
+                            // Phase 2.2: Notify typing when user types
+                            if (e.target.value.trim()) {
+                                notifyTyping();
+                            }
+                        }}
                         onKeyDown={handleKeyDown}
                         disabled={disabled || isSending}
                         maxLength={MAX_MESSAGE_LENGTH}

@@ -3,13 +3,15 @@ import type {
   User,
   Room,
   ChatMessage,
+  MessagesResponse,
   AuthResponse,
   ApiResponse,
 } from "./types";
 import { storage } from "@shared/utils/storage";
 
-// API base configuration
-const API_BASE_URL = "http://localhost:8081/api/v1";
+// API base configuration - Load from environment variables
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8081/api/v1";
 
 // Create axios instance
 const apiClient = axios.create({
@@ -39,11 +41,10 @@ apiClient.interceptors.response.use(
     if (response && response.data) {
       // New backend API returns { status, message, data } or { success, message, data }
       // Check for both status="success" and success=true formats
+      // Note: data can be null for DELETE operations
       const hasNewFormat =
-        (response.data.status !== undefined &&
-          response.data.data !== undefined) ||
-        (response.data.success !== undefined &&
-          response.data.data !== undefined);
+        response.data.status !== undefined ||
+        response.data.success !== undefined;
 
       if (hasNewFormat) {
         console.log("📡 [API] New format response:", response.data);
@@ -102,15 +103,20 @@ apiClient.interceptors.response.use(
 type BackendUser = {
   uuid?: string;
   id?: string; // fallback
+  user_uuid?: string; // from backend
   email_address?: string;
   email?: string; // fallback
+  user_email?: string; // from backend
   full_name?: string;
   name?: string; // fallback
   fullname?: string; // fallback
+  user_fullname?: string; // from backend
   role?: "Admin" | "Member";
-  user_role?: "Admin" | "Member"; // fallback
+  user_role?: "Admin" | "Member"; // fallback from backend
   created_at?: string;
   updated_at?: string;
+  user_created_at?: string; // from backend
+  user_updated_at?: string; // from backend
 };
 
 // helper map backend dto sang User interface với fallbacks
@@ -130,15 +136,30 @@ const mapBackendUserToFrontend = (
   }
 
   const mapped = {
-    user_uuid: backendUser.uuid || backendUser.id || "",
-    user_email: backendUser.email_address || backendUser.email || "",
+    user_uuid:
+      backendUser.user_uuid || backendUser.uuid || backendUser.id || "",
+    user_email:
+      backendUser.user_email ||
+      backendUser.email_address ||
+      backendUser.email ||
+      "",
     user_fullname:
-      backendUser.full_name || backendUser.name || backendUser.fullname || "",
-    user_role: (backendUser.role || backendUser.user_role || "Member") as
+      backendUser.user_fullname ||
+      backendUser.full_name ||
+      backendUser.name ||
+      backendUser.fullname ||
+      "",
+    user_role: (backendUser.user_role || backendUser.role || "Member") as
       | "Admin"
       | "Member",
-    user_created_at: backendUser.created_at || new Date().toISOString(),
-    user_updated_at: backendUser.updated_at || new Date().toISOString(),
+    user_created_at:
+      backendUser.user_created_at ||
+      backendUser.created_at ||
+      new Date().toISOString(),
+    user_updated_at:
+      backendUser.user_updated_at ||
+      backendUser.updated_at ||
+      new Date().toISOString(),
   };
 
   console.log("🔄 mapBackendUserToFrontend:", {
@@ -382,11 +403,16 @@ export const roomsApi = {
 
   getRoomMessages: async (
     roomID: number,
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<ChatMessage[]> => {
-    const response: ApiResponse<ChatMessage[]> = await apiClient.get(
-      `/rooms/${roomID}/messages?limit=${limit}&offset=${offset}`
+    cursor?: number,
+    limit: number = 50
+  ): Promise<MessagesResponse> => {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (cursor) {
+      params.append("cursor", cursor.toString());
+    }
+
+    const response: ApiResponse<MessagesResponse> = await apiClient.get(
+      `/rooms/${roomID}/messages?${params}`
     );
     console.log(
       `📜 [roomsApi.getRoomMessages] Room ${roomID} messages:`,
@@ -395,7 +421,7 @@ export const roomsApi = {
 
     if (response.success) {
       console.log(
-        "✅ [roomsApi.getRoomMessages] Messages with user info:",
+        "✅ [roomsApi.getRoomMessages] Messages with pagination:",
         response.data
       );
       return response.data;
@@ -420,13 +446,13 @@ export const roomsApi = {
           content,
         }
       );
-      console.log(`💬 [roomsApi.sendMessage] Response:`, response);
+      // console.log(`💬 [roomsApi.sendMessage] Response:`, response);
 
       if (response.success) {
-        console.log(
-          `✅ [roomsApi.sendMessage] Message sent successfully:`,
-          response.data
-        );
+        // console.log(
+        //   `✅ [roomsApi.sendMessage] Message sent successfully:`,
+        //   response.data
+        // );
         return response.data;
       } else {
         console.error(`❌ [roomsApi.sendMessage] Failed:`, response.message);
@@ -437,23 +463,75 @@ export const roomsApi = {
       throw error;
     }
   },
+
+  // 🆕 NEW: Mark room as read
+  markRoomAsRead: async (roomID: number): Promise<void> => {
+    console.log(
+      `✅ [roomsApi.markRoomAsRead] Marking room ${roomID} as read...`
+    );
+
+    try {
+      const response: ApiResponse<null> = await apiClient.post(
+        `/rooms/${roomID}/mark-read`,
+        {
+          last_message_id: 0, // Backend will use latest message
+        }
+      );
+
+      if (response.success) {
+        console.log(
+          `✅ [roomsApi.markRoomAsRead] Room ${roomID} marked as read`
+        );
+      } else {
+        console.error(`❌ [roomsApi.markRoomAsRead] Failed:`, response.message);
+        throw new Error(response.message || "Failed to mark room as read");
+      }
+    } catch (error) {
+      console.error(
+        `💥 [roomsApi.markRoomAsRead] Exception for room ${roomID}:`,
+        error
+      );
+      throw error;
+    }
+  },
 };
 
 // Admin API
 export const adminApi = {
-  getAllUsers: async (): Promise<User[]> => {
-    console.log("🔍 [adminApi.getAllUsers] Getting all users...");
+  getAllUsers: async (
+    page: number = 1,
+    perPage: number = 10
+  ): Promise<{
+    users: User[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  }> => {
+    console.log(
+      `🔍 [adminApi.getAllUsers] Getting users page ${page}, per_page ${perPage}...`
+    );
 
     try {
-      const response: ApiResponse<BackendUser[]> = await apiClient.get(
-        "/admin/users"
-      );
+      const response: ApiResponse<{
+        users: BackendUser[];
+        total: number;
+        page: number;
+        per_page: number;
+        total_pages: number;
+      }> = await apiClient.get(`/admin/users?page=${page}&per_page=${perPage}`);
       console.log("🔍 [adminApi.getAllUsers] Response:", response);
 
       if (response.success) {
-        const users = response.data.map(mapBackendUserToFrontend);
+        const users = response.data.users.map(mapBackendUserToFrontend);
         console.log("🔍 [adminApi.getAllUsers] Mapped users:", users);
-        return users;
+        return {
+          users,
+          total: response.data.total,
+          page: response.data.page,
+          per_page: response.data.per_page,
+          total_pages: response.data.total_pages,
+        };
       } else {
         console.error("❌ [adminApi.getAllUsers] Failed:", response.message);
         throw new Error(response.message || "Failed to get users");
@@ -514,11 +592,26 @@ export const adminApi = {
     }
   },
 
-  getAllRooms: async (): Promise<Room[]> => {
-    console.log("🏢 [adminApi.getAllRooms] Getting all rooms...");
+  getAllRooms: async (
+    page: number = 1,
+    perPage: number = 10
+  ): Promise<{
+    rooms: Room[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  }> => {
+    console.log(`🏢 [adminApi.getAllRooms] Getting rooms page ${page}...`);
 
     try {
-      const response: ApiResponse<Room[]> = await apiClient.get("/admin/rooms");
+      const response: ApiResponse<{
+        rooms: Room[];
+        total: number;
+        page: number;
+        per_page: number;
+        total_pages: number;
+      }> = await apiClient.get(`/admin/rooms?page=${page}&per_page=${perPage}`);
       console.log("📊 [adminApi.getAllRooms] Response:", response);
 
       if (response.success) {

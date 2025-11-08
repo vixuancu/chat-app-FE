@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '@shared/services/api';
 import { Avatar } from '@shared/components/ui/Avatar';
+import { Pagination } from '@shared/components/ui/Pagination';
 import type { User } from '@shared/services/types';
 import toast from 'react-hot-toast';
 
@@ -8,17 +9,23 @@ export const UserManagementPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [perPage] = useState(10);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(currentPage);
+  }, [currentPage]);
 
-  const loadUsers = async () => {
+  const loadUsers = async (page: number) => {
     try {
       setLoading(true);
       setError(null);
-      const userList = await adminApi.getAllUsers();
-      setUsers(userList);
+      const response = await adminApi.getAllUsers(page, perPage);
+      setUsers(response.users);
+      setTotal(response.total);
+      setTotalPages(response.total_pages);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load users';
       setError(errorMsg);
@@ -75,7 +82,7 @@ export const UserManagementPage: React.FC = () => {
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="text-red-800">Error: {error}</div>
         <button
-          onClick={loadUsers}
+          onClick={() => loadUsers(currentPage)}
           className="mt-2 text-red-600 hover:text-red-800 underline"
         >
           Try again
@@ -85,46 +92,49 @@ export const UserManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div >
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Manage user accounts and permissions
+            Manage user accounts and permissions • Total: {total} users
           </p>
         </div>
         <button
-          onClick={loadUsers}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          onClick={() => loadUsers(currentPage)}
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Refresh
         </button>
       </div>
-
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.user_uuid} className="hover:bg-gray-50">
+   
+      {/* Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => (
+                <tr key={user.user_uuid} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <Avatar name={user.user_fullname} size="sm" />
@@ -163,13 +173,27 @@ export const UserManagementPage: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
         
-        {users.length === 0 && (
+        {users.length === 0 && !loading && (
           <div className="text-center py-8 text-gray-500">
             No users found
           </div>
         )}
       </div>
+
+      {/* Pagination - Bottom */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+          total={total}
+          perPage={perPage}
+          currentCount={users.length}
+        />
+      )}
     </div>
   );
 };

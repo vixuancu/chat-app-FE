@@ -1,168 +1,173 @@
-# Hướng dẫn Code Frontend
+# Nguyên tắc làm việc cho AI Assistant
 
-## Nguyên tắc chung
-
-- Code phải rõ ràng, dễ đọc, dễ bảo trì.
-- Tách biệt UI (component) và logic (hook, service).
-- Luôn dùng TypeScript để tránh lỗi runtime.
-- Comment bằng tiếng Việt ở các đoạn quan trọng để giải thích cho
-  team.
-
-# 🏗️ Project Structure Guideline
-
-Đây là cấu trúc thư mục chuẩn cho frontend project sử dụng **React**.  
-Mục tiêu: tách biệt **Client** (người dùng cuối) và **Admin** (quản trị hệ thống), đồng thời vẫn dùng chung được các phần tái sử dụng như UI component, hooks, utils.
+Mục tiêu của file này là đặt ra các quy tắc cốt lõi để đảm bảo mọi phản hồi và hành động đều dựa trên tư duy phản biện, thực tế và phục vụ đúng yêu cầu.
 
 ---
 
-## 1. Cấu trúc thư mục tổng thể
+### 1. Nguyên tắc Tư duy Cốt lõi
 
+Trước khi viết bất kỳ dòng code nào, hãy tuân thủ các nguyên tắc sau:
+
+- **Tư duy Phản biện (Critical Thinking):**
+
+  - Luôn đặt câu hỏi "Tại sao?" và "Nếu... thì sao?" để lường trước các vấn đề tiềm ẩn hoặc trường hợp biên (edge cases).
+  - Nếu yêu cầu không rõ ràng hoặc có thể gây ra lỗi ngầm, **hãy đặt câu hỏi làm rõ** thay vì đưa ra giả định.
+  - Đánh giá các giải pháp khác nhau, nêu rõ ưu và nhược điểm (trade-offs) về hiệu năng, bảo mật và độ phức tạp trước khi chọn một.
+  - luôn chú ý những liên query liên quan đến database làm sao tạo ra các hàm học query tối ưu hiệu năng nhất.
+
+- **Tư duy Thực tế (Practical Thinking):**
+  - **Ưu tiên hàng đầu là sự nhất quán.** Code mới phải tuân thủ nghiêm ngặt style, convention và kiến trúc đã có trong dự án.
+  - Viết code đơn giản, dễ hiểu và dễ bảo trì. Tránh các giải pháp phức tạp không cần thiết (over-engineering).
+  - Luôn cân nhắc về bảo mật (security) và hiệu năng (performance) trong mọi giải pháp được đề xuất.
+
+---
+
+### 2. Quy trình Làm việc Bắt buộc
+
+- **Hành động trước, Giải thích sau:**
+  - **Chỉ thực hiện nhiệm vụ được yêu cầu.** Hoàn thành việc code, sửa lỗi, hoặc refactor trước.
+  - **Tuyệt đối không tự ý tạo file tài liệu (.md, docs) hoặc viết giải thích** nếu không có yêu cầu rõ ràng từ tôi.
+  - Khi được yêu cầu viết tài liệu hoặc giải thích, hãy thực hiện việc đó **sau khi** đã hoàn thành và kiểm tra xong phần code.
+
+---
+
+### 3. Architecture & Project Structure
+
+#### Tech Stack
+
+- **Frontend**: React 18 + TypeScript (strict mode)
+- **Styling**: TailwindCSS
+- **Routing**: React Router v6
+- **Forms**: React Hook Form (for optimal UX)
+- **Real-time**: WebSocket for chat
+- **API**: Axios for REST endpoints
+- **State**: Custom hooks (`useAuth`, `useMessages`, `useRooms`, `useWebSocket`)
+
+#### Directory Structure
+
+```
 src/
-├─ client/ # Ứng dụng dành cho người dùng (Client App)
-│ ├─ components/ # UI component riêng của client
-│ ├─ pages/ # Các trang chính (Home, Login, Profile, Chat, ...)
-│ ├─ hooks/ # Custom hooks dành riêng cho client
-│ ├─ services/ # API call cho client (auth, chat, product, ...)
-│ ├─ contexts/ # React Context (AuthContext, ThemeContext, ...)
-│ ├─ routes/ # Định nghĩa routing riêng cho client
-│ └─ AppClient.tsx # Entry point cho client
-│
-├─ admin/ # Ứng dụng dành cho quản trị (Admin App)
-│ ├─ components/ # UI component riêng của admin (Table, DashboardCard,...)
-│ ├─ pages/ # Các trang quản trị (UserManagement, ProductManagement, ...)
-│ ├─ hooks/ # Custom hooks dành riêng cho admin
-│ ├─ services/ # API call cho admin (user, order, report,...)
-│ ├─ contexts/ # Context riêng cho admin
-│ ├─ routes/ # Định nghĩa routing riêng cho admin
-│ └─ AppAdmin.tsx # Entry point cho admin
-│
-├─ shared/ # Phần tái sử dụng giữa client và admin
-│ ├─ components/ # Button, Modal, Input, Form, Layout cơ bản
-│ ├─ hooks/ # Custom hooks dùng chung (useFetch, useDebounce, ...)
-│ ├─ utils/ # Hàm tiện ích, validate, format date,...
-│ ├─ types/ # Định nghĩa type/interface chung
-│ └─ assets/ # Hình ảnh, icon, font
-│
-├─ index.tsx # Entry point chính (chọn load AppClient hoặc AppAdmin tùy route)
-└─ routes.tsx # Config route tổng hợp
-
-## 2. Routing định hướng
-
-### 2.1 Client routes
-
-- `/` → Trang chủ (Home)
-- `/login` → Đăng nhập
-- `/register` → Đăng ký
-- `/products` → Danh sách sản phẩm
-- `/profile` → Thông tin cá nhân
-- `/chat` → Chat
-
-### 2.2 Admin routes
-
-- `/admin` → Dashboard chính
-- `/admin/users` → Quản lý người dùng
-- `/admin/products` → Quản lý sản phẩm
-- `/admin/orders` → Quản lý đơn hàng
-
-> ⚠️ Lưu ý: Người dùng **không được phép** truy cập `/admin/*`.  
-> Admin có thể truy cập cả `/client/*` và `/admin/*`.
-
----
-
-Nguyên tắc bảo mật routing
-
-- Sử dụng **ProtectedRoute** để chặn người dùng không có quyền vào admin.
-- Context/Auth service sẽ quản lý role (`user`, `admin`).
-- Khi `role = admin`, admin có thể load cả 2 app (client + admin).
-- Khi `role = user`, chỉ load client app.
-
----
-
-Ưu điểm của cách chia này
-✅ Code rõ ràng, tách biệt trách nhiệm.  
-✅ Admin và Client có thể phát triển độc lập.  
-✅ Shared folder giúp tái sử dụng logic/UI.  
-✅ Dễ mở rộng: sau này có thể thêm **mobile/** hoặc **partner/** tương tự client/admin.
-
-## 3. Coding Style
-
-- Sử dụng functional component (`React.FC`).
-- Luôn destructuring props.
-- Dùng async/await thay vì .then.
-- Tách API call sang service, không gọi API trực tiếp trong component.
-- Luôn xử lý loading, success, error state.
-
-## 4. Xử lý lỗi & try-catch
-
-- Mọi API call phải bọc trong `try/catch`.
-- Có `errorHandler` chung trong `services/errorHandler.ts` để thống
-  nhất cách log & hiển thị lỗi.
-
-Ví dụ:
-
-```ts
-import { apiClient } from "./apiClient";
-import { handleApiError } from "./errorHandler";
-
-export async function fetchBooks() {
-  try {
-    const res = await apiClient.get("/books");
-    return res.data;
-  } catch (error) {
-    handleApiError(error, "Lỗi khi lấy danh sách sách");
-    throw error;
-  }
-}
+├── admin/          # Admin panel (components, pages, routes)
+├── client/         # Client app (components, pages, routes)
+├── shared/         # Shared resources
+    ├── components/ # Reusable UI components
+    ├── hooks/      # Custom hooks
+    ├── services/   # API services & types
+    └── utils/      # Utilities & constants
 ```
 
-## 5. UI/UX
+#### Path Aliases (configured in tsconfig.app.json)
 
-- Loading: Luôn hiển thị spinner hoặc skeleton khi chờ dữ liệu.
-- Empty state: Hiển thị thông báo khi không có dữ liệu.
-- Error state: Hiển thị thông báo lỗi thân thiện với người dùng.
-- có thông báo thành công khi cần (ví dụ: thêm/sửa/xoá thành công).hoặc các trường hợp cần thông báo khác .... ví dụ logout
+```typescript
+@/*          → ./src/*
+@client/*    → ./src/client/*
+@admin/*     → ./src/admin/*
+@shared/*    → ./src/shared/*
+@/assets/*   → ./src/assets/*
+```
 
-## 6. Quy ước đặt tên
+---
 
-- Component: PascalCase (e.g., `BookList`, `ChatBox`).
-- Hook: camelCase bắt đầu bằng `use` (e.g., `useAuth`, `useChat`).
-- File: PascalCase cho component, camelCase cho utility.
+### 4. Best Practices & Patterns
 
-## 7. Best Practices
+#### Form Handling - CRITICAL UX RULE
 
-- Code nhỏ gọn, mỗi component chỉ làm 1 nhiệm vụ.
-- Tái sử dụng component càng nhiều càng tốt.
-- Props phải có type rõ ràng.
-- State management: dùng React Context hoặc Zustand/Redux nếu phức
-  tạp.
-- Routing: tách biệt route client và admin.
-- Ưu tiên responsive design (mobile-first).
+**NEVER use `setTimeout` before navigation after form submission!**
 
-## 8. Ví dụ minh hoạ
+✅ **DO:**
 
 ```tsx
-// components/books/BookList.tsx
-import React from "react";
-import { Book } from "@/types/book";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
-type Props = {
-  books: Book[];
+const onSubmit = async (data: FormData) => {
+  try {
+    await apiCall(data);
+    navigate("/success", { replace: true }); // Immediate navigation
+  } catch (error) {
+    setError(error.message);
+  }
 };
 
-export const BookList: React.FC<Props> = ({ books }) => {
-  if (!books.length) return <p>Không có sách nào.</p>;
+return (
+  <form onSubmit={handleSubmit(onSubmit)}>
+    <input {...register("field", { required: "Error message" })} />
+    {errors.field && <p>{errors.field.message}</p>}
+    <button disabled={isSubmitting}>
+      {isSubmitting ? "Loading..." : "Submit"}
+    </button>
+  </form>
+);
+```
 
-  return (
-    <ul>
-      {books.map((book) => (
-        <li key={book.id}>{book.title}</li>
-      ))}
-    </ul>
-  );
-};
+❌ **DON'T:**
+
+```tsx
+// BAD: Delays navigation, poor UX
+setTimeout(() => navigate('/success'), 2000);
+
+// BAD: Manual state management instead of react-hook-form
+const [field, setField] = useState('');
+onChange={(e) => setField(e.target.value)}
+```
+
+#### WebSocket Integration
+
+- Centralized in `src/shared/hooks/useWebSocket.ts`
+- Automatic reconnection with exponential backoff
+- Queue pending operations when disconnected
+- Always cleanup on unmount
+
+#### Component Patterns
+
+- Use functional components + hooks
+- TailwindCSS utility classes only
+- `AdminLayout` for admin pages
+- `MainApp` for client entry point
+- Place shared components in `src/shared/components`
+
+#### API Integration
+
+- Define endpoints in `src/shared/services/api.ts`
+- Types in `src/shared/services/types.ts`
+- Consistent error handling with toast notifications
+
+---
+
+### 5. Developer Workflows
+
+#### Development
+
+```bash
+npm run dev          # Start dev server (port 3000)
+lsof -i :3000       # Check port usage
+kill -9 <PID>       # Kill process
+```
+
+#### TailwindCSS
+
+```bash
+npx @tailwindcss/upgrade  # Upgrade TailwindCSS
 ```
 
 ---
 
-👉 Với tài liệu này, GitHub Copilot có thể dựa vào để gợi ý code nhất
-quán hơn cho toàn bộ dự án frontend.
+### 6. Common Pitfalls to Avoid
+
+1. **Form submissions causing page reload** → Use `handleSubmit(onSubmit)` from react-hook-form
+2. **Delayed navigation with setTimeout** → Navigate immediately after success
+3. **Manual form state management** → Use react-hook-form's `register` and validation
+4. **Missing loading states** → Always show `isSubmitting` state in forms
+5. **Circular dependencies** → Follow directory structure strictly
+6. **Not cleaning up WebSocket connections** → Always return cleanup function
+
+---
+
+### 7. Example Implementations
+
+See the following files for reference implementations:
+
+- Forms: `src/client/components/auth/LoginForm.tsx`
+- Modals: `src/shared/components/modals/CreateRoomModal.tsx`
+- WebSocket: `src/shared/hooks/useWebSocket.ts`
+- Real-time updates: `src/shared/hooks/useMessages.ts`

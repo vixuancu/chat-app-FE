@@ -9,6 +9,11 @@ interface ChatWindowProps {
     currentUser: User;
     onSendMessage: (text: string) => Promise<void>;
     isConnected?: boolean; // WebSocket connection status
+    socket?: WebSocket | null; // Phase 2.2: Pass socket for typing indicator
+    // 🆕 Infinite scroll props
+    isLoadingMessages?: boolean;
+    hasMoreMessages?: boolean;
+    onLoadMoreMessages?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -16,7 +21,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     messages,
     currentUser,
     onSendMessage,
-    isConnected = false
+    isConnected = false,
+    socket = null,
+    isLoadingMessages = false,
+    hasMoreMessages = false,
+    onLoadMoreMessages
 }) => {
     const [showMembers, setShowMembers] = useState(false);
 
@@ -59,6 +68,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <MessageList
                     messages={messages}
                     currentUser={currentUser}
+                    isLoading={isLoadingMessages}
+                    hasMore={hasMoreMessages}
+                    onLoadMore={onLoadMoreMessages}
                 />
             </div>
 
@@ -67,6 +79,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 <MessageInput 
                     onSendMessage={onSendMessage} 
                     disabled={!isConnected}
+                    roomId={room.room_id}
+                    socket={socket}
                 />
             </div>
         </div>

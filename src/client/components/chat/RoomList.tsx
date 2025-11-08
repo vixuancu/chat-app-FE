@@ -25,7 +25,14 @@ export const RoomList: React.FC<RoomListProps> = ({
         if (!currentUser) return 'Chưa có tin nhắn nào';
         
         // Use ChatUtils to validate and format message
-        return ChatUtils.formatLastMessage(room, currentUser);
+        let message = ChatUtils.formatLastMessage(room, currentUser);
+        
+        // 🆕 Truncate to 20 characters max with "..."
+        if (message.length > 20) {
+            message = message.substring(0, 25) + '...';
+        }
+        
+        return message;
     };
     
     // ✅ Helper function for time formatting
@@ -84,17 +91,14 @@ export const RoomList: React.FC<RoomListProps> = ({
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <p className={`text-xs truncate ${
-                                        ChatUtils.hasValidLastMessage(room) 
-                                            ? 'text-gray-500' 
-                                            : 'text-gray-400 italic'
+                                        !ChatUtils.hasValidLastMessage(room)
+                                            ? 'text-gray-400 italic'
+                                            : room.unread && room.unread > 0
+                                            ? 'text-gray-900 font-semibold' // ✅ Tin chưa đọc: Màu đen + bold
+                                            : 'text-gray-500' // Tin đã đọc: Màu xám
                                     }`}>
                                         {getLastMessage(room)}
                                     </p>
-                                    {room.member_count !== undefined && (
-                                        <span className="text-xs text-gray-400 ml-2">
-                                            {room.member_count} thành viên
-                                        </span>
-                                    )}
                                 </div>
                             </div>
                         </div>

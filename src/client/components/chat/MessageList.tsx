@@ -1,14 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage, User } from '@shared/services/types';
 import { Avatar } from '@shared/components/ui/Avatar';
 
 interface MessageListProps {
     messages: ChatMessage[];
     currentUser: User;
+    isLoading?: boolean;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, currentUser }) => {
+export const MessageList: React.FC<MessageListProps> = ({ 
+    messages, 
+    currentUser,
+    isLoading = false,
+    hasMore = false,
+    onLoadMore
+}) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+    const previousScrollHeight = useRef<number>(0);
 
     // Sort messages by timestamp to ensure chronological order (oldest first, newest last)
     const sortedMessages = [...messages].sort((a, b) => {
@@ -19,16 +31,53 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, currentUser 
         originalCount: messages.length,
         sortedCount: sortedMessages.length,
         firstMessage: sortedMessages[0]?.content,
-        lastMessage: sortedMessages[sortedMessages.length - 1]?.content
+        lastMessage: sortedMessages[sortedMessages.length - 1]?.content,
+        hasMore,
+        isLoading
     });
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // 🆕 Infinite Scroll: Detect scroll to top
+    const handleScroll = () => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        
+        // Check if user is near bottom (within 100px)
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        setShouldScrollToBottom(isNearBottom);
+
+        // 🚀 Load more when scroll to top (within 50px)
+        if (scrollTop < 50 && hasMore && !isLoading && onLoadMore) {
+            console.log("🔄 [MessageList] Loading more messages...");
+            previousScrollHeight.current = scrollHeight;
+            onLoadMore();
+        }
     };
 
+    // Scroll to bottom on first load or new message (only if user is near bottom)
     useEffect(() => {
-        scrollToBottom();
-    }, [sortedMessages]); // Use sortedMessages instead of messages
+        if (shouldScrollToBottom) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [sortedMessages, shouldScrollToBottom]);
+
+    // 🆕 Maintain scroll position after loading older messages
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container || previousScrollHeight.current === 0) return;
+
+        const newScrollHeight = container.scrollHeight;
+        const scrollDiff = newScrollHeight - previousScrollHeight.current;
+        
+        if (scrollDiff > 0) {
+            // Restore scroll position (don't jump to top)
+            container.scrollTop += scrollDiff;
+            console.log("📍 [MessageList] Maintained scroll position after load");
+        }
+        
+        previousScrollHeight.current = 0;
+    }, [messages.length]);
 
     if (sortedMessages.length === 0) {
         return (
@@ -47,7 +96,32 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, currentUser 
     }
 
     return (
-        <div className="h-full overflow-y-auto scrollbar-thin smooth-scroll bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-2">
+        <div 
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="h-full overflow-y-auto scrollbar-thin smooth-scroll bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-2"
+        >
+            {/* 🆕 Loading indicator at top */}
+            {isLoading && (
+                <div className="flex justify-center py-4">
+                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+                        <span className="text-sm text-gray-600">Đang tải...</span>
+                    </div>
+                </div>
+            )}
+
+            {/* 🆕 "Load more" button (optional, if hasMore but not auto-loading) */}
+            {hasMore && !isLoading && (
+                <div className="flex justify-center py-2">
+                    <button
+                        onClick={onLoadMore}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium bg-white/60 hover:bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 transition-colors shadow-sm"
+                    >
+                        ↑ Tải tin nhắn cũ hơn
+                    </button>
+                </div>
+            )}
             <div className="max-w-4xl mx-auto">
                 {sortedMessages.map((message, index) => {
                     // Use is_own if available, otherwise fallback to user_uuid comparison
@@ -86,6 +160,15 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, currentUser 
                                         : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                                 } ${!showAvatar ? (isCurrentUser ? 'rounded-br-2xl' : 'rounded-bl-2xl') : ''}`}>
                                     <p className="text-sm leading-relaxed">{message.content}</p>
+                                    
+                                    {/* Phase 1.3: Message status indicator (only for own messages) */}
+                                    {isCurrentUser && message.status && (
+                                        <span className="text-xs ml-2 inline-block" title={message.status}>
+                                            {message.status === 'sending'}
+                                            {message.status === 'sent' }
+                                            {message.status === 'error' && '❌'}
+                                        </span>
+                                    )}
                                 </div>
                                 
                                 {/* Timestamp - only show for last message in group or after 5 minutes */}

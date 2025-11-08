@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { roomsApi, adminApi } from "@shared/services/api";
-import type { Room, User } from "@shared/services/types";
+import type { Room, User, ChatMessage } from "@shared/services/types";
 import { storage } from "@shared/utils/storage";
 
 interface UseRoomsReturn {
@@ -16,14 +16,174 @@ interface UseRoomsReturn {
   setRooms: React.Dispatch<React.SetStateAction<Room[]>>; // Add this
   loadRoomMembers: (roomId: number) => Promise<User[]>;
   deleteRoom: (roomId: number) => Promise<void>;
+  updateRoomLastMessage: (roomId: number, message: ChatMessage) => void; // NEW: Update last message
+  markRoomAsRead: (roomId: number) => void; // NEW: Mark room as read
 }
 
-export const useRooms = (): UseRoomsReturn => {
+interface UseRoomsOptions {
+  socket?: WebSocket | null; // Accept WebSocket for real-time updates
+}
+
+export const useRooms = (options?: UseRoomsOptions): UseRoomsReturn => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [roomMembers, setRoomMembers] = useState<Record<number, User[]>>({});
+
+  // ✅ NEW: Update last message for a room in real-time
+  // ✅ NEW: Update last message for a room in real-time
+  const updateRoomLastMessage = useCallback(
+    (roomId: number, message: ChatMessage) => {
+      console.log(
+        `🔔 [useRooms] Updating last_message for room ${roomId}:`,
+        message
+      );
+
+      setRooms((prevRooms) =>
+        prevRooms.map((room) => {
+          if (room.room_id === roomId) {
+            const currentUser = storage.getUser();
+            // Use selectedRoom from closure, but we need current value
+            // So we'll check this inside the setter
+            const isCurrentRoomSelected = selectedRoom?.room_id === roomId;
+
+            // Increment unread count only if:
+            // 1. Message is from another user
+            // 2. User is not currently viewing this room
+            const shouldIncrementUnread =
+              message.user_uuid !== currentUser?.user_uuid &&
+              !isCurrentRoomSelected;
+
+            console.log(`📊 [useRooms] Room ${roomId} update logic:`, {
+              messageFrom: message.user_uuid,
+              currentUser: currentUser?.user_uuid,
+              isCurrentRoomSelected,
+              shouldIncrementUnread,
+              currentUnread: room.unread,
+            });
+
+            // Transform ChatMessage to Room.last_message format
+            const lastMessage = {
+              message_id: message.message_id,
+              content: message.content,
+              sender_name: message.user_fullname,
+              sender_uuid: message.user_uuid,
+              created_at: message.created_at,
+              is_own: message.user_uuid === currentUser?.user_uuid,
+            };
+
+            const updated = {
+              ...room,
+              last_message: lastMessage,
+              unread: shouldIncrementUnread
+                ? (room.unread || 0) + 1
+                : room.unread,
+            };
+
+            console.log(`✅ [useRooms] Updated room ${roomId}:`, {
+              oldUnread: room.unread,
+              newUnread: updated.unread,
+              lastMessage: updated.last_message,
+            });
+
+            return updated;
+          }
+          return room;
+        })
+      );
+    },
+    [selectedRoom]
+  );
+
+  // ✅ NEW: Mark room as read when user views it
+  const markRoomAsRead = useCallback(async (roomId: number) => {
+    console.log(`👁️ [useRooms] Marking room ${roomId} as read`);
+
+    // 1. Update local state immediately (optimistic)
+    setRooms((prevRooms) =>
+      prevRooms.map((room) =>
+        room.room_id === roomId ? { ...room, unread: 0 } : room
+      )
+    );
+
+    // 2. Call backend API to persist
+    try {
+      await roomsApi.markRoomAsRead(roomId);
+      console.log(`✅ [useRooms] Room ${roomId} marked as read on backend`);
+    } catch (error) {
+      console.error(
+        `❌ [useRooms] Failed to mark room ${roomId} as read:`,
+        error
+      );
+      // Optionally: revert local state if API fails
+    }
+  }, []);
+
+  // ✅ NEW: Listen to WebSocket events for real-time updates
+  useEffect(() => {
+    const socket = options?.socket;
+
+    console.log("🔌 [useRooms] Setting up WebSocket listener:", {
+      hasSocket: !!socket,
+      readyState: socket?.readyState,
+      url: socket?.url,
+    });
+
+    if (!socket) {
+      console.warn(
+        "⚠️ [useRooms] No socket provided - real-time updates disabled!"
+      );
+      return;
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("🔔 [useRooms] WebSocket event received:", {
+          type: data.type,
+          hasPayload: !!data.payload,
+          payload: data.payload,
+        });
+
+        // Handle new message event
+        if (data.type === "message" && data.payload) {
+          const message = data.payload as ChatMessage;
+          console.log(
+            "💬 [useRooms] Updating last_message for room:",
+            message.room_id
+          );
+          updateRoomLastMessage(message.room_id, message);
+        }
+
+        // Handle room update event
+        if (data.type === "room_update" && data.payload) {
+          const updatedRoom = data.payload as Room;
+          console.log(
+            "🏠 [useRooms] Room update event for room:",
+            updatedRoom.room_id
+          );
+          setRooms((prevRooms) =>
+            prevRooms.map((room) =>
+              room.room_id === updatedRoom.room_id
+                ? { ...room, ...updatedRoom }
+                : room
+            )
+          );
+        }
+      } catch (error) {
+        console.error("❌ [useRooms] Error parsing WebSocket message:", error);
+      }
+    };
+
+    console.log("✅ [useRooms] Adding WebSocket message listener");
+    socket.addEventListener("message", handleMessage);
+
+    return () => {
+      console.log("🧹 [useRooms] Removing WebSocket message listener");
+      socket.removeEventListener("message", handleMessage);
+    };
+  }, [options?.socket, updateRoomLastMessage]);
 
   const loadRooms = useCallback(async () => {
     setIsLoading(true);
@@ -211,5 +371,7 @@ export const useRooms = (): UseRoomsReturn => {
     selectRoom,
     loadRoomMembers,
     deleteRoom,
+    updateRoomLastMessage,
+    markRoomAsRead,
   };
 };

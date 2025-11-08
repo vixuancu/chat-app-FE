@@ -3,6 +3,7 @@ import type { ChatMessage } from "@shared/services/types";
 import { storage } from "@shared/utils/storage";
 
 interface UseWebSocketReturn {
+  socket: WebSocket | null; // Expose socket for external listeners
   isConnected: boolean;
   error: string | null;
   isConnecting: boolean;
@@ -120,7 +121,11 @@ export const useWebSocket = (): UseWebSocketReturn => {
     cleanup();
 
     try {
-      const wsUrl = `ws://localhost:8081/api/v1/chat/ws?token=${token}`;
+      // Load WebSocket URL from environment variable
+      const WS_BASE_URL =
+        import.meta.env.VITE_WS_BASE_URL ||
+        "ws://localhost:8081/api/v1/chat/ws";
+      const wsUrl = `${WS_BASE_URL}?token=${token}`;
       console.log(
         "🌐 [useWebSocket] WebSocket URL:",
         wsUrl.replace(token, "[TOKEN]")
@@ -146,6 +151,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
 
           switch (data.type) {
             case "new_message":
+            case "message": // Backend sends "message", frontend expects "new_message"
               if (data.data) {
                 let messageData;
 
@@ -186,7 +192,17 @@ export const useWebSocket = (): UseWebSocketReturn => {
                     : false,
                 };
 
+                console.log("📨 [useWebSocket] Calling message callback...");
                 messageCallbackRef.current?.(formattedMessage);
+
+                console.log(
+                  "🔔 [useWebSocket] Calling room update callback...",
+                  {
+                    hasCallback: !!roomUpdateCallbackRef.current,
+                    roomId: formattedMessage.room_id,
+                    messageId: formattedMessage.message_id,
+                  }
+                );
                 roomUpdateCallbackRef.current?.(
                   formattedMessage.room_id,
                   formattedMessage
@@ -302,7 +318,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
       // 🔧 FIX: If not connected, queue the operation
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         console.log(
-          "⏳ [useWebSocket] WebSocket not ready, queuing join room operation"
+          " [useWebSocket] WebSocket not ready, queuing join room operation"
         );
 
         // Remove any existing operation for this room
@@ -346,7 +362,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
     // 🔧 FIX: If not connected, queue the operation
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.log(
-        "⏳ [useWebSocket] WebSocket not ready, queuing leave room operation"
+        " [useWebSocket] WebSocket not ready, queuing leave room operation"
       );
 
       // Remove any existing operation for this room
@@ -407,11 +423,13 @@ export const useWebSocket = (): UseWebSocketReturn => {
   }, []);
 
   const onMessage = useCallback((callback: (message: ChatMessage) => void) => {
+    console.log("📝 [useWebSocket] onMessage callback registered");
     messageCallbackRef.current = callback;
   }, []);
 
   const onRoomUpdate = useCallback(
     (callback: (roomId: number, lastMessage: ChatMessage) => void) => {
+      console.log("📝 [useWebSocket] onRoomUpdate callback registered");
       roomUpdateCallbackRef.current = callback;
     },
     []
@@ -422,6 +440,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
   }, [cleanup]);
 
   return {
+    socket: wsRef.current, // Expose WebSocket instance
     isConnected,
     isConnecting,
     error,

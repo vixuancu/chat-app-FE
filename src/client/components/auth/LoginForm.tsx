@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '@shared/hooks/useAuth';
 import { storage } from '@shared/utils/storage';
 import type { User } from '@shared/services/types';
@@ -8,24 +9,38 @@ interface LoginFormProps {
     onLogin: (user: User) => void;
 }
 
+interface LoginFormData {
+    email: string;
+    password: string;
+    rememberMe: boolean;
+}
+
 export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const { login, isLoading } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm<LoginFormData>({
+        defaultValues: {
+            email: '',
+            password: '',
+            rememberMe: false,
+        },
+    });
+
+    const onSubmit = async (data: LoginFormData) => {
         setError('');
         setSuccessMessage('');
 
-        console.log('🔐 [LoginForm] Attempting login:', { email });
+        console.log('🔐 [LoginForm] Attempting login:', { email: data.email });
 
         try {
-            await login(email, password);
+            await login(data.email, data.password);
             console.log('✅ [LoginForm] Login successful');
 
             setSuccessMessage('Đăng nhập thành công!');
@@ -35,16 +50,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             if (currentUser) {
                 onLogin(currentUser);
 
-                // Navigate based on user role
-                setTimeout(() => {
-                    if (currentUser.user_role === 'Admin') {
-                        console.log('👤 [LoginForm] Admin user - redirecting to admin panel');
-                        navigate('/admin/dashboard');
-                    } else {
-                        console.log('👤 [LoginForm] Regular user - redirecting to chat');
-                        navigate('/chat');
-                    }
-                }, 1000);
+                // Navigate immediately - no setTimeout for better UX
+                if (currentUser.user_role === 'Admin') {
+                    console.log('👤 [LoginForm] Admin user - redirecting to admin panel');
+                    navigate('/admin/dashboard', { replace: true });
+                } else {
+                    console.log('👤 [LoginForm] Regular user - redirecting to chat');
+                    navigate('/chat', { replace: true });
+                }
             }
         } catch (err: unknown) {
             console.error('❌ [LoginForm] Login failed:', err);
@@ -58,7 +71,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                     Email
@@ -66,15 +79,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <div className="mt-1">
                     <input
                         id="email"
-                        name="email"
                         type="email"
                         autoComplete="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        {...register('email', {
+                            required: 'Email là bắt buộc',
+                            pattern: {
+                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                message: 'Email không hợp lệ',
+                            },
+                        })}
                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         placeholder="Nhập địa chỉ email"
                     />
+                    {errors.email && (
+                        <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                    )}
                 </div>
             </div>
 
@@ -85,15 +104,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <div className="mt-1">
                     <input
                         id="password"
-                        name="password"
                         type="password"
                         autoComplete="current-password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        {...register('password', {
+                            required: 'Mật khẩu là bắt buộc',
+                            minLength: {
+                                value: 6,
+                                message: 'Mật khẩu phải có ít nhất 6 ký tự',
+                            },
+                        })}
                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         placeholder="Nhập mật khẩu"
                     />
+                    {errors.password && (
+                        <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                    )}
                 </div>
             </div>
 
@@ -113,10 +138,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <div className="flex items-center">
                     <input
                         id="remember-me"
-                        name="remember-me"
                         type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
+                        {...register('rememberMe')}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
@@ -132,10 +155,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
             <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                disabled={isSubmitting || isLoading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isLoading ? 'Đang đăng nhập...' : successMessage ? 'Đăng nhập thành công!' : 'Đăng nhập'}
+                {isSubmitting || isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
         </form>
     );

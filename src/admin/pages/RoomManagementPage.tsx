@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '@shared/services/api';
+import { Pagination } from '@shared/components/ui/Pagination';
 import type { Room } from '@shared/services/types';
 import toast from 'react-hot-toast';
 
@@ -7,17 +8,23 @@ export const RoomManagementPage: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [perPage] = useState(10);
 
   useEffect(() => {
-    loadRooms();
-  }, []);
+    loadRooms(currentPage);
+  }, [currentPage]);
 
-  const loadRooms = async () => {
+  const loadRooms = async (page: number) => {
     try {
       setLoading(true);
       setError(null);
-      const roomList = await adminApi.getAllRooms();
-      setRooms(roomList);
+      const response = await adminApi.getAllRooms(page, perPage);
+      setRooms(response.rooms);
+      setTotal(response.total);
+      setTotalPages(response.total_pages);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load rooms';
       setError(errorMsg);
@@ -58,7 +65,7 @@ export const RoomManagementPage: React.FC = () => {
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="text-red-800">Error: {error}</div>
         <button
-          onClick={loadRooms}
+          onClick={() => loadRooms(currentPage)}
           className="mt-2 text-red-600 hover:text-red-800 underline"
         >
           Try again
@@ -72,15 +79,18 @@ export const RoomManagementPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Room Management</h1>
-          <p className="text-gray-600 mt-1">Manage chat rooms and channels</p>
+          <p className="text-gray-600 mt-1">Manage chat rooms and channels • Total: {total} rooms</p>
         </div>
         <button
-          onClick={loadRooms}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => loadRooms(currentPage)}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Refresh
         </button>
       </div>
+
+    
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -88,7 +98,7 @@ export const RoomManagementPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Rooms</p>
-              <p className="text-2xl font-bold text-gray-900">{rooms.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +147,7 @@ export const RoomManagementPage: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900">All Rooms</h3>
         </div>
 
-        {rooms.length === 0 ? (
+        {rooms.length === 0 && !loading ? (
           <div className="px-6 py-12 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -158,25 +168,25 @@ export const RoomManagementPage: React.FC = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {rooms.map((room) => (
-                  <tr key={room.room_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${
-                            room.room_is_direct_chat ? 'bg-purple-500' : 'bg-blue-500'
-                          }`}>
-                            {(room.room_name || 'Unknown').charAt(0).toUpperCase()}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {rooms.map((room) => (
+                <tr key={room.room_id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${
+                          room.room_is_direct_chat ? 'bg-purple-500' : 'bg-blue-500'
+                        }`}>
+                          {(room.room_name || 'Unknown').charAt(0).toUpperCase()}
                           </div>
                         </div>
                         <div className="ml-4">
@@ -222,6 +232,19 @@ export const RoomManagementPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination - Bottom */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          disabled={loading}
+          total={total}
+          perPage={perPage}
+          currentCount={rooms.length}
+        />
+      )}
     </div>
   );
 };
